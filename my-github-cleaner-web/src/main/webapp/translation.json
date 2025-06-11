@@ -1,0 +1,89 @@
+{
+  "app": {
+    "title": "MyGithubCleaner"
+  },
+  "navigation": {
+    "toggle": "Toggle navigation",
+    "home": "Home",
+    "entities": "Entities"
+  },
+  "home": {
+    "index": {
+      "headline": "Welcome to your new app!",
+      "text": "Your app was created with <a href=\"https://bootify.io\" target=\"_blank\" className=\"underline\">Bootify.io</a> and can now be customized. If you are happy with the result, <strong>please recommend us to other developers</strong> - so Bootify.io can grow further.",
+      "exploreEntities": "Explore your entities"
+    }
+  },
+  "error": {
+    "page": {
+      "headline": "Error",
+      "message": "The page you are looking for is not available right now."
+    }
+  },
+  "repositories": {
+    "list": {
+      "headline": "Repositorieses",
+      "createNew": "Create new Repositories",
+      "empty": "No Repositorieses could be found.",
+      "sort": {
+        "id,ASC": "Sort by Id (Ascending)",
+        "repoName,ASC": "Sort by Repo Name (Ascending)",
+        "repoCreatedDate,ASC": "Sort by Repo Created Date (Ascending)"
+      },
+      "filter": "Filter by Id",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "add": {
+      "headline": "Add Repositories",
+      "back": "Back to list"
+    },
+    "id": {
+      "label": "Id"
+    },
+    "repoName": {
+      "label": "Repo Name"
+    },
+    "repoCreatedDate": {
+      "label": "Repo Created Date"
+    },
+    "edit": {
+      "headline": "Edit Repositories",
+      "back": "Back to list"
+    },
+    "create": {
+      "success": "Repositories was created successfully."
+    },
+    "update": {
+      "success": "Repositories was updated successfully."
+    },
+    "delete": {
+      "success": "Repositories was removed successfully."
+    }
+  },
+  "exists": {
+    "repositories": {
+      "repoName": "This Repo Name is already taken."
+    }
+  },
+  "select": {
+    "empty": {
+      "label": "Please select"
+    }
+  },
+  "delete": {
+    "confirm": "Do you really want to delete this element? This cannot be undone."
+  },
+  "operation": {
+    "success": "Your operation was successful."
+  },
+  "required": "Please provide a value.",
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "elements": "Item {{range}} of {{total}}"
+  },
+  "searchFilter": {
+    "apply": "Apply"
+  }
+}
