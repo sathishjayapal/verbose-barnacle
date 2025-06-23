@@ -8,7 +8,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-
 @Service
 public class RepomaintsecConfigUserDetailsService implements UserDetailsService {
 
@@ -29,5 +28,4 @@ public class RepomaintsecConfigUserDetailsService implements UserDetailsService 
         }
         throw new UsernameNotFoundException("User " + username + " not found");
     }
-
 }

@@ -6,7 +6,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-
 @Service
 public class RepositoriesService {
 
@@ -29,15 +28,17 @@ public class RepositoriesService {
         } else {
             page = repositoriesRepository.findAll(pageable);
         }
-        return new PageImpl<>(page.getContent()
-                .stream()
-                .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
-                .toList(),
-                pageable, page.getTotalElements());
+        return new PageImpl<>(
+                page.getContent().stream()
+                        .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
+                        .toList(),
+                pageable,
+                page.getTotalElements());
     }
 
     public RepositoriesDTO get(final Long id) {
-        return repositoriesRepository.findById(id)
+        return repositoriesRepository
+                .findById(id)
                 .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
                 .orElseThrow(NotFoundException::new);
     }
@@ -49,8 +50,7 @@ public class RepositoriesService {
     }
 
     public void update(final Long id, final RepositoriesDTO repositoriesDTO) {
-        final Repositories repositories = repositoriesRepository.findById(id)
-                .orElseThrow(NotFoundException::new);
+        final Repositories repositories = repositoriesRepository.findById(id).orElseThrow(NotFoundException::new);
         mapToEntity(repositoriesDTO, repositories);
         repositoriesRepository.save(repositories);
     }
@@ -59,16 +59,14 @@ public class RepositoriesService {
         repositoriesRepository.deleteById(id);
     }
 
-    private RepositoriesDTO mapToDTO(final Repositories repositories,
-            final RepositoriesDTO repositoriesDTO) {
+    private RepositoriesDTO mapToDTO(final Repositories repositories, final RepositoriesDTO repositoriesDTO) {
         repositoriesDTO.setId(repositories.getId());
         repositoriesDTO.setRepoName(repositories.getRepoName());
         repositoriesDTO.setRepoCreatedDate(repositories.getRepoCreatedDate());
         return repositoriesDTO;
     }
 
-    private Repositories mapToEntity(final RepositoriesDTO repositoriesDTO,
-            final Repositories repositories) {
+    private Repositories mapToEntity(final RepositoriesDTO repositoriesDTO, final Repositories repositories) {
         repositories.setRepoName(repositoriesDTO.getRepoName());
         repositories.setRepoCreatedDate(repositoriesDTO.getRepoCreatedDate());
         return repositories;
@@ -77,5 +75,4 @@ public class RepositoriesService {
     public boolean repoNameExists(final String repoName) {
         return repositoriesRepository.existsByRepoName(repoName);
     }
-
 }
