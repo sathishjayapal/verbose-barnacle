@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+
 @RestController
 @RequestMapping(value = "/api/repositoriess", produces = MediaType.APPLICATION_JSON_VALUE)
 @PreAuthorize("hasAnyAuthority('" + UserRoles.ADMIN + "', '" + UserRoles.VIEWER + "')")
@@ -39,19 +40,21 @@ public class RepositoriesResource {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RepositoriesDTO> getRepositories(@PathVariable(name = "id") final Long id) {
+    public ResponseEntity<RepositoriesDTO> getRepositories(
+            @PathVariable(name = "id") final Long id) {
         return ResponseEntity.ok(repositoriesService.get(id));
     }
 
     @PostMapping
-    public ResponseEntity<Long> createRepositories(@RequestBody @Valid final RepositoriesDTO repositoriesDTO) {
+    public ResponseEntity<Long> createRepositories(
+            @RequestBody @Valid final RepositoriesDTO repositoriesDTO) {
         final Long createdId = repositoriesService.create(repositoriesDTO);
         return new ResponseEntity<>(createdId, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Long> updateRepositories(
-            @PathVariable(name = "id") final Long id, @RequestBody @Valid final RepositoriesDTO repositoriesDTO) {
+    public ResponseEntity<Long> updateRepositories(@PathVariable(name = "id") final Long id,
+            @RequestBody @Valid final RepositoriesDTO repositoriesDTO) {
         repositoriesService.update(id, repositoriesDTO);
         return ResponseEntity.ok(id);
     }
@@ -61,4 +64,5 @@ public class RepositoriesResource {
         repositoriesService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
 }

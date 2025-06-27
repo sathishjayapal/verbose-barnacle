@@ -7,5 +7,8 @@ export class RepositoriesDTO {
   id?: number|null;
   repoName?: string|null;
   repoCreatedDate?: string|null;
+  repoUpdatedDate?: string|null;
+  cloneUrl?: string|null;
+  description?: string|null;
 
 }

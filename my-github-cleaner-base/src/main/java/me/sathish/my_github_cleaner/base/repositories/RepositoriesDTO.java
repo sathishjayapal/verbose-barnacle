@@ -5,14 +5,27 @@ import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 public class RepositoriesDTO {
 
     private Long id;
 
-    @NotNull @RepositoriesRepoNameUnique
+    @NotNull
+    @RepositoriesRepoNameUnique
     private String repoName;
 
+    @NotNull
     private LocalDateTime repoCreatedDate;
+
+    @NotNull
+    private LocalDateTime repoUpdatedDate;
+
+    @NotNull
+    private String cloneUrl;
+
+    @NotNull
+    private String description;
+
 }
