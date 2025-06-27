@@ -11,12 +11,15 @@ import org.springframework.stereotype.Service;
 public class RepositoriesService {
 
     private final RepositoriesRepository repositoriesRepository;
+    private final GitHubService gitHubService;
 
-    public RepositoriesService(final RepositoriesRepository repositoriesRepository) {
+    public RepositoriesService(final RepositoriesRepository repositoriesRepository, GitHubService gitHubService) {
         this.repositoriesRepository = repositoriesRepository;
+        this.gitHubService = gitHubService;
     }
 
     public Page<RepositoriesDTO> findAll(final String filter, final Pageable pageable) {
+
         Page<Repositories> page;
         if (filter != null) {
             Long longFilter = null;
