@@ -6,6 +6,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 
 @SpringBootApplication
+
 @ComponentScan("me.sathish.my_github_cleaner")
 public class MyGithubCleanerApplication {
 
