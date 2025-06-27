@@ -42,3 +42,4 @@ coverage/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+/package-lock.json
