@@ -1,7 +1,5 @@
 # MyGithubCleaner
-
-This app was created with Bootify.io - tips on working with the code [can be found here](https://bootify.io/next-steps/).
-
+GitHubCleaner is a tool to clean up your GitHub account by removing unwanted repositories, issues, and pull requests.
 ## Development
 
 When starting the application `docker compose up` is called and the app will connect to the contained services.
