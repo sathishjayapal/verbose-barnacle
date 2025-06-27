@@ -7,15 +7,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 
+
 @Configuration
-@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
+@EnableSpringDataWebSupport(
+        pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO
+)
 public class JacksonConfig {
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
-        return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder.featuresToDisable(
-                DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-                DeserializationFeature.ACCEPT_FLOAT_AS_INT,
-                SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder
+                .featuresToDisable(
+                        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                        DeserializationFeature.ACCEPT_FLOAT_AS_INT,
+                        SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
+                );
     }
+
 }

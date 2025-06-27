@@ -47,6 +47,15 @@
     "repoCreatedDate": {
       "label": "Repo Created Date"
     },
+    "repoUpdatedDate": {
+      "label": "Repo Updated Date"
+    },
+    "cloneUrl": {
+      "label": "Clone Url"
+    },
+    "description": {
+      "label": "Description"
+    },
     "edit": {
       "headline": "Edit Repositories",
       "back": "Back to list"

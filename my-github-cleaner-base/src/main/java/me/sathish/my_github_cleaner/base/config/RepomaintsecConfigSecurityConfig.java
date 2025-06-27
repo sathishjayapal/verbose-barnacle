@@ -12,6 +12,7 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 public class RepomaintsecConfigSecurityConfig {
@@ -23,13 +24,14 @@ public class RepomaintsecConfigSecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(final AuthenticationConfiguration authenticationConfiguration)
-            throws Exception {
+    public AuthenticationManager authenticationManager(
+            final AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain repomaintsecConfigFilterChain(final HttpSecurity http) throws Exception {
+    public SecurityFilterChain repomaintsecConfigFilterChain(final HttpSecurity http) throws
+            Exception {
         return http.cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
@@ -37,4 +39,5 @@ public class RepomaintsecConfigSecurityConfig {
                 .httpBasic(basic -> basic.realmName("repomaintsecConfig realm"))
                 .build();
     }
+
 }

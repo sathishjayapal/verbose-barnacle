@@ -16,12 +16,16 @@ import org.springframework.test.context.jdbc.SqlMergeMode;
 import org.springframework.util.StreamUtils;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+
 /**
  * Abstract base class to be extended by every IT test. Starts the Spring Boot context with a
  * Datasource connected to the Testcontainers Docker instance. The instance is reused for all tests,
  * with all data wiped out before each test.
  */
-@SpringBootTest(classes = MyGithubCleanerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        classes = MyGithubCleanerApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
 @ActiveProfiles("it")
 @Sql("/data/clearAll.sql")
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
@@ -29,13 +33,13 @@ public abstract class BaseIT {
 
     @ServiceConnection
     private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:17.5");
-
     public static final String ADMIN = "admin";
     public static final String VIEWER = "viewer";
     public static final String PASSWORD = "Bootify!";
 
     static {
-        postgreSQLContainer.withReuse(true).start();
+        postgreSQLContainer.withReuse(true)
+                .start();
     }
 
     @LocalServerPort
@@ -55,4 +59,5 @@ public abstract class BaseIT {
     public String readResource(final String resourceName) {
         return StreamUtils.copyToString(getClass().getResourceAsStream(resourceName), StandardCharsets.UTF_8);
     }
+
 }
