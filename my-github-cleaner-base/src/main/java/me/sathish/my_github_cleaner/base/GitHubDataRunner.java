@@ -1,4 +1,4 @@
-package me.sathish.my_github_cleaner;
+package me.sathish.my_github_cleaner.base;
 
 import me.sathish.my_github_cleaner.base.repositories.GitHubService;
 import me.sathish.my_github_cleaner.base.repositories.RepositoriesDTO;
