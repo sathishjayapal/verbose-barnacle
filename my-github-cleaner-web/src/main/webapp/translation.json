@@ -9,8 +9,8 @@
   },
   "home": {
     "index": {
-      "headline": "Welcome to your new app!",
-      "text": "Your app was created with <a href=\"https://bootify.io\" target=\"_blank\" className=\"underline\">Bootify.io</a> and can now be customized. If you are happy with the result, <strong>please recommend us to other developers</strong> - so Bootify.io can grow further.",
+      "headline": "Sathish GITHUB Repositories Cleaner",
+      "text": "Maintain GitHub repositories by removing unwanted branches, tags, and releases.",
       "exploreEntities": "Explore your entities"
     }
   },
@@ -22,9 +22,9 @@
   },
   "repositories": {
     "list": {
-      "headline": "Repositorieses",
+      "headline": "Repositories",
       "createNew": "Create new Repositories",
-      "empty": "No Repositorieses could be found.",
+      "empty": "No Repositories could be found.",
       "sort": {
         "id,ASC": "Sort by Id (Ascending)",
         "repoName,ASC": "Sort by Repo Name (Ascending)",
