@@ -1,6 +1,6 @@
 {
   "name": "my-github-cleaner-frontend",
-  "author": "Bootify.io",
+  "author": "sathish jayapal",
   "scripts": {
     "devserver": "webpack serve --open --mode development",
     "build": "webpack --mode production",
