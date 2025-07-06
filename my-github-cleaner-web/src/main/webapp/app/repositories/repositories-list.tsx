@@ -10,6 +10,7 @@ import Sorting from 'app/common/list-helper/sorting';
 import useDocumentTitle from 'app/common/use-document-title';
 
 
+
 export default function RepositoriesList() {
   const { t } = useTranslation();
   useDocumentTitle(t('repositories.list.headline'));
@@ -26,7 +27,7 @@ export default function RepositoriesList() {
 
   const getAllRepositorieses = async () => {
     try {
-      const response = await axios.get('/api/repositoriess?' + listParams);
+      const response = await axios.get('/api/repositories?' + listParams,{ headers: { authorization: 'Basic ' + window.btoa('viewer' + ":" + 'Bootify!') } });
       setRepositorieses(response.data);
     } catch (error: any) {
       handleServerError(error, navigate);
@@ -38,8 +39,8 @@ export default function RepositoriesList() {
       return;
     }
     try {
-      await axios.delete('/api/repositoriess/' + id);
-      navigate('/repositoriess', {
+      await axios.delete('/api/repositories/' + id);
+      navigate('/repositories', {
             state: {
               msgInfo: t('repositories.delete.success')
             }
@@ -58,7 +59,7 @@ export default function RepositoriesList() {
     <div className="flex flex-wrap mb-6">
       <h1 className="grow text-3xl md:text-4xl font-medium mb-2">{t('repositories.list.headline')}</h1>
       <div>
-        <Link to="/repositoriess/add" className="inline-block text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-300  focus:ring-4 rounded px-5 py-2">{t('repositories.list.createNew')}</Link>
+        <Link to="/repositories/add" className="inline-block text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-300  focus:ring-4 rounded px-5 py-2">{t('repositories.list.createNew')}</Link>
       </div>
     </div>
     {((repositorieses && repositorieses.page.totalElements !== 0) || searchParams.get('filter')) && (
@@ -88,7 +89,7 @@ export default function RepositoriesList() {
             <td className="p-2">{repositories.repoUpdatedDate}</td>
             <td className="p-2">
               <div className="float-right whitespace-nowrap">
-                <Link to={'/repositoriess/edit/' + repositories.id} className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-3 rounded px-2.5 py-1.5 text-sm">{t('repositories.list.edit')}</Link>
+                <Link to={'/repositories/edit/' + repositories.id} className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-3 rounded px-2.5 py-1.5 text-sm">{t('repositories.list.edit')}</Link>
                 <span> </span>
                 <button type="button" onClick={() => confirmDelete(repositories.id!)} className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-3 rounded px-2.5 py-1.5 text-sm">{t('repositories.list.delete')}</button>
               </div>
