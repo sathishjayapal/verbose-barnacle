@@ -14,9 +14,9 @@ export default function AppRoutes() {
       element: <App />,
       children: [
         { path: '', element: <Home /> },
-        { path: 'repositoriess', element: <RepositoriesList /> },
-        { path: 'repositoriess/add', element: <RepositoriesAdd /> },
-        { path: 'repositoriess/edit/:id', element: <RepositoriesEdit /> },
+        { path: 'repositories', element: <RepositoriesList /> },
+        { path: 'repositories/add', element: <RepositoriesAdd /> },
+        { path: 'repositories/edit/:id', element: <RepositoriesEdit /> },
         { path: 'error', element: <Error /> },
         { path: '*', element: <Error /> }
       ]

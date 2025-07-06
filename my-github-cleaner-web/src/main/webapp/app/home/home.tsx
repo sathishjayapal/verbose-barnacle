@@ -15,7 +15,7 @@ export default function Home() {
     <div className="md:w-2/5 mb-12">
       <h4 className="text-2xl font-medium mb-4">{t('home.index.exploreEntities')}</h4>
       <div className="flex flex-col border border-gray-300 rounded">
-        <Link to="/repositoriess" className="w-full border-gray-300 hover:bg-gray-100 rounded-t rounded-b px-4 py-2">{t('repositories.list.headline')}</Link>
+        <Link to="/repositories" className="w-full border-gray-300 hover:bg-gray-100 rounded-t rounded-b px-4 py-2">{t('repositories.list.headline')}</Link>
       </div>
     </div>
   </>);

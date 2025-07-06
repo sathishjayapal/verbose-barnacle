@@ -2,6 +2,7 @@ package me.sathish.my_github_cleaner.base.repositories;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/github")
+@PreAuthorize("hasAuthority('VIEWER')")
 public class GitHubController {
     @Autowired
     private GitHubService gitHubService;

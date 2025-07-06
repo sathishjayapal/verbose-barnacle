@@ -1,4 +1,4 @@
-package me.sathish.my_github_cleaner.base;
+package me.sathish.my_github_cleaner;
 
 import me.sathish.my_github_cleaner.base.repositories.GitHubService;
 import me.sathish.my_github_cleaner.base.repositories.RepositoriesDTO;
@@ -25,7 +25,7 @@ public class GitHubDataRunner implements CommandLineRunner {
                 repositoriesDTO.setRepoUpdatedDate(repository.getUpdatedAt());
                 repositoriesDTO.setDescription(repository.getDescription());
                 repositoriesDTO.setCloneUrl(repository.getCloneUrl());
-//                repositoriesService.create(repositoriesDTO);
+                repositoriesService.create(repositoriesDTO);
             }, error -> System.err.println("Error fetching repositories: " + error.getMessage()),
             () -> System.out.println("Completed fetching repositories")
         );

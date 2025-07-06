@@ -8,19 +8,23 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 
 @Configuration
-@Profile("local")
+//@Profile("local")
 public class ReactLocalConfig {
-
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
 
             @Override
             public void addCorsMappings(final CorsRegistry registry) {
-                registry.addMapping("/**").allowedMethods("*").allowedOrigins("http://localhost:3000");
+                registry.addMapping("/**").allowedMethods("*").allowedOrigins("http://localhost:3000","http://localhost:8080")
+                        .allowedHeaders("*")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowCredentials(true)
+                .maxAge(3600);
             }
 
         };
     }
 
 }
+

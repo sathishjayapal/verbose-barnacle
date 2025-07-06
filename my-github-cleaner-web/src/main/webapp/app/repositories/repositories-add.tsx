@@ -42,8 +42,14 @@ export default function RepositoriesAdd() {
   const createRepositories = async (data: RepositoriesDTO) => {
     window.scrollTo(0, 0);
     try {
-      await axios.post('/api/repositoriess', data);
-      navigate('/repositoriess', {
+      console.error(data);
+      await axios.post('/api/repositories', data, {
+        auth: {
+          username: 'viewer',
+          password: 'Bootify!'
+        }
+      });
+      navigate('/repositories', {
             state: {
               msgSuccess: t('repositories.create.success')
             }
@@ -57,7 +63,7 @@ export default function RepositoriesAdd() {
     <div className="flex flex-wrap mb-6">
       <h1 className="grow text-3xl md:text-4xl font-medium mb-2">{t('repositories.add.headline')}</h1>
       <div>
-        <Link to="/repositoriess" className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-4 rounded px-5 py-2">{t('repositories.add.back')}</Link>
+        <Link to="/repositories" className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-4 rounded px-5 py-2">{t('repositories.add.back')}</Link>
       </div>
     </div>
     <form onSubmit={useFormResult.handleSubmit(createRepositories)} noValidate>

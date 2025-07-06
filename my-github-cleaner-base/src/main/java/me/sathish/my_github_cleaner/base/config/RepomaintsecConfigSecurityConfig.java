@@ -11,6 +11,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+
 
 
 @Configuration
@@ -29,15 +31,27 @@ public class RepomaintsecConfigSecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    @Bean
-    public SecurityFilterChain repomaintsecConfigFilterChain(final HttpSecurity http) throws
-            Exception {
-        return http.cors(withDefaults())
+    public SecurityFilterChain basicFilterChain(final HttpSecurity http) throws Exception {
+        return http.securityMatcher("/api/**")
+                .cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
-                .httpBasic(basic -> basic.realmName("repomaintsecConfig realm"))
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().hasAuthority("VIEWER"))
+                .httpBasic(basic -> basic.realmName("basic realm"))
                 .build();
     }
+//    @Bean
+//    public SecurityFilterChain repomaintsecConfigFilterChain(final HttpSecurity http) throws
+//            Exception {
+//        return http.cors(withDefaults())
+//                .csrf(csrf -> csrf.ignoringRequestMatchers("/home", "/api/**", "/actuator/**"))
+//                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+//                .formLogin(form ->
+//                        form.loginPage("/login").usernameParameter("login").failureUrl("/login?loginError=true"))
+//                .logout(logout -> logout.logoutSuccessUrl("/?logoutSuccess=true")
+//                        .deleteCookies("SESSION"))
+//                .csrf(csrf -> csrf.disable()).exceptionHandling(exception -> exception.authenticationEntryPoint(
+//                        new LoginUrlAuthenticationEntryPoint("/login?loginRequired=true")))
+//                .build();
+//    }
 
 }

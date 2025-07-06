@@ -21,7 +21,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .auth().preemptive().basic(ADMIN, PASSWORD)
                     .accept(ContentType.JSON)
                 .when()
-                    .get("/api/repositoriess")
+                    .get("/api/repositories")
                 .then()
                     .statusCode(HttpStatus.OK.value())
                     .body("page.totalElements", Matchers.equalTo(2))
@@ -36,7 +36,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .auth().preemptive().basic(ADMIN, PASSWORD)
                     .accept(ContentType.JSON)
                 .when()
-                    .get("/api/repositoriess?filter=1001")
+                    .get("/api/repositories?filter=1001")
                 .then()
                     .statusCode(HttpStatus.OK.value())
                     .body("page.totalElements", Matchers.equalTo(1))
@@ -50,7 +50,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .redirects().follow(false)
                     .accept(ContentType.JSON)
                 .when()
-                    .get("/api/repositoriess")
+                    .get("/api/repositories")
                 .then()
                     .statusCode(HttpStatus.UNAUTHORIZED.value())
                     .body("code", Matchers.equalTo("AUTHORIZATION_DENIED"));
@@ -64,7 +64,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .auth().preemptive().basic(ADMIN, PASSWORD)
                     .accept(ContentType.JSON)
                 .when()
-                    .get("/api/repositoriess/1000")
+                    .get("/api/repositories/1000")
                 .then()
                     .statusCode(HttpStatus.OK.value())
                     .body("repoName", Matchers.equalTo("Elementum tempus egestas sed sed risus pretium."));
@@ -77,7 +77,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .auth().preemptive().basic(ADMIN, PASSWORD)
                     .accept(ContentType.JSON)
                 .when()
-                    .get("/api/repositoriess/1666")
+                    .get("/api/repositories/1666")
                 .then()
                     .statusCode(HttpStatus.NOT_FOUND.value())
                     .body("code", Matchers.equalTo("NOT_FOUND"));
@@ -92,7 +92,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .contentType(ContentType.JSON)
                     .body(readResource("/requests/repositoriesDTORequest.json"))
                 .when()
-                    .post("/api/repositoriess")
+                    .post("/api/repositories")
                 .then()
                     .statusCode(HttpStatus.CREATED.value());
         assertEquals(1, repositoriesRepository.count());
@@ -107,7 +107,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .contentType(ContentType.JSON)
                     .body(readResource("/requests/repositoriesDTORequest_missingField.json"))
                 .when()
-                    .post("/api/repositoriess")
+                    .post("/api/repositories")
                 .then()
                     .statusCode(HttpStatus.BAD_REQUEST.value())
                     .body("code", Matchers.equalTo("VALIDATION_FAILED"))
@@ -125,7 +125,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .contentType(ContentType.JSON)
                     .body(readResource("/requests/repositoriesDTORequest.json"))
                 .when()
-                    .put("/api/repositoriess/1000")
+                    .put("/api/repositories/1000")
                 .then()
                     .statusCode(HttpStatus.OK.value());
         assertEquals("Eget est lorem ipsum dolor sit amet. Phasellus vestibulum lorem sed risus ultricies tristique.", repositoriesRepository.findById(((long)1000)).orElseThrow().getRepoName());
@@ -140,7 +140,7 @@ public class RepositoriesResourceTest extends BaseIT {
                     .auth().preemptive().basic(ADMIN, PASSWORD)
                     .accept(ContentType.JSON)
                 .when()
-                    .delete("/api/repositoriess/1000")
+                    .delete("/api/repositories/1000")
                 .then()
                     .statusCode(HttpStatus.NO_CONTENT.value());
         assertEquals(1, repositoriesRepository.count());
