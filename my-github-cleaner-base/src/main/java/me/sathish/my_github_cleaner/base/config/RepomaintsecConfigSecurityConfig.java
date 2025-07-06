@@ -30,7 +30,7 @@ public class RepomaintsecConfigSecurityConfig {
             final AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
-
+@Bean
     public SecurityFilterChain basicFilterChain(final HttpSecurity http) throws Exception {
         return http.securityMatcher("/api/**")
                 .cors(withDefaults())
