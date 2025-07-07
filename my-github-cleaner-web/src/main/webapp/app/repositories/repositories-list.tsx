@@ -76,7 +76,7 @@ export default function RepositoriesList() {
         <thead>
           <tr>
             <th scope="col" className="text-left p-2">{t('repositories.id.label')}</th>
-            <th scope="col" className="text-left p-2">{t('repositories.repoCreatedDate.label')}</th>
+            <th scope="col" className="text-left p-2">{t('repositories.repoName.label')}</th>
             <th scope="col" className="text-left p-2">{t('repositories.repoUpdatedDate.label')}</th>
             <th></th>
           </tr>
@@ -85,8 +85,8 @@ export default function RepositoriesList() {
           {repositorieses.content.map((repositories) => (
           <tr key={repositories.id} className="odd:bg-gray-100">
             <td className="p-2">{repositories.id}</td>
-            <td className="p-2">{repositories.repoCreatedDate}</td>
-            <td className="p-2">{repositories.repoUpdatedDate}</td>
+            <td className="p-2">{repositories.repoName}</td>
+            <td className="p-2">{repositories.description}</td>
             <td className="p-2">
               <div className="float-right whitespace-nowrap">
                 <Link to={'/repositories/edit/' + repositories.id} className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-3 rounded px-2.5 py-1.5 text-sm">{t('repositories.list.edit')}</Link>

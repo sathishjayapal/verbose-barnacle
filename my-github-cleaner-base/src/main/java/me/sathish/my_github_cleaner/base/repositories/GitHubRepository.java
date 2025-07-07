@@ -11,6 +11,7 @@ public class GitHubRepository {
 
     @JsonProperty("full_name")
     private String fullName;
+
     @JsonProperty("description")
     private String description;
 

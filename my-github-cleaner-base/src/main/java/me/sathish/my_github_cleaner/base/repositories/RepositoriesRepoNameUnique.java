@@ -16,16 +16,13 @@ import java.lang.annotation.Target;
 import java.util.Map;
 import org.springframework.web.servlet.HandlerMapping;
 
-
 /**
  * Validate that the repoName value isn't taken yet.
  */
-@Target({ FIELD, METHOD, ANNOTATION_TYPE })
+@Target({FIELD, METHOD, ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Constraint(
-        validatedBy = RepositoriesRepoNameUnique.RepositoriesRepoNameUniqueValidator.class
-)
+@Constraint(validatedBy = RepositoriesRepoNameUnique.RepositoriesRepoNameUniqueValidator.class)
 public @interface RepositoriesRepoNameUnique {
 
     String message() default "{exists.repositories.repoName}";
@@ -39,8 +36,8 @@ public @interface RepositoriesRepoNameUnique {
         private final RepositoriesService repositoriesService;
         private final HttpServletRequest request;
 
-        public RepositoriesRepoNameUniqueValidator(final RepositoriesService repositoriesService,
-                final HttpServletRequest request) {
+        public RepositoriesRepoNameUniqueValidator(
+                final RepositoriesService repositoriesService, final HttpServletRequest request) {
             this.repositoriesService = repositoriesService;
             this.request = request;
         }
@@ -51,16 +48,17 @@ public @interface RepositoriesRepoNameUnique {
                 // no value present
                 return true;
             }
-            @SuppressWarnings("unchecked") final Map<String, String> pathVariables =
-                    ((Map<String, String>)request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE));
+            @SuppressWarnings("unchecked")
+            final Map<String, String> pathVariables =
+                    ((Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE));
             final String currentId = pathVariables.get("id");
-            if (currentId != null && value.equalsIgnoreCase(repositoriesService.get(Long.parseLong(currentId)).getRepoName())) {
+            if (currentId != null
+                    && value.equalsIgnoreCase(
+                            repositoriesService.get(Long.parseLong(currentId)).getRepoName())) {
                 // value hasn't changed
                 return true;
             }
             return !repositoriesService.repoNameExists(value);
         }
-
     }
-
 }
