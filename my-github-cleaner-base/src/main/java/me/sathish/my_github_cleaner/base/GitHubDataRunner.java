@@ -28,6 +28,7 @@ public class GitHubDataRunner implements CommandLineRunner {
                 getAllUserRepositoriesPaginated(environment.getProperty("githubusername"));
         if (repositoriesService.countByRecords()) {
             logger.info("Repositories already exist in the database. Skipping data fetch.");
+            saveRepositoriesReactive(repositoriesFlux).blockLast();
         } else
             saveRepositoriesReactive(repositoriesFlux).blockLast();
     }
