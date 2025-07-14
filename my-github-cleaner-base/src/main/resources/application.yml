@@ -20,6 +20,10 @@ spring:
   docker:
     compose:
       lifecycle-management: start-only
+  cloud:
+    kubernetes:
+      discovery:
+        all-namespaces: true
 error:
   handling:
     http-status-in-json-response: true
