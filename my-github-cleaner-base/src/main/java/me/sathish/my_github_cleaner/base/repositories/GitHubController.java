@@ -19,6 +19,7 @@ public class GitHubController {
 
     @GetMapping("/repos/{username}")
     public Mono<List<GitHubRepository>> getUserRepositories(@PathVariable String username) {
+        System.out.println("Not making any request to GitHub API if username is empty");
         return gitHubService.getUserRepositories(username);
     }
 
