@@ -1,7 +1,7 @@
 package me.sathish.my_github_cleaner.base;
 
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
-import me.sathish.my_github_cleaner.base.repositories.GitHubService;
+import me.sathish.my_github_cleaner.base.github.GitHubService;
 import me.sathish.my_github_cleaner.base.repositories.RepositoriesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,9 @@ public class GitHubDataRunner implements CommandLineRunner {
     private final Environment environment;
     Logger logger = LoggerFactory.getLogger(GitHubDataRunner.class);
 
-    public GitHubDataRunner(GitHubService gitHubService, RepositoriesService repositoriesService, Environment environment) {
+    public GitHubDataRunner(GitHubService gitHubService,
+                            RepositoriesService repositoriesService,
+                            Environment environment) {
         this.gitHubService = gitHubService;
         this.repositoriesService = repositoriesService;
         this.environment = environment;
