@@ -1,6 +1,8 @@
-package me.sathish.my_github_cleaner.base.repositories;
+package me.sathish.my_github_cleaner.base.github;
 
 import java.util.List;
+
+import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;

@@ -1,6 +1,8 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
 import java.util.List;
+
+import me.sathish.my_github_cleaner.base.github.GitHubService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
