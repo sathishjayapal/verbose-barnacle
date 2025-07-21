@@ -15,7 +15,7 @@ public class GitHubDeleter {
     @Autowired
     Environment environment;
 
-    public void deleteRepository(String repositoryName) {
+    public HttpResponse deleteRepository(String repositoryName) {
 
         try {
             HttpClient client = HttpClient.newHttpClient();
@@ -37,10 +37,12 @@ public class GitHubDeleter {
                         response.statusCode());
                 System.out.println("Response: " + response.body());
             }
-
+            return response;
         } catch (IOException | InterruptedException e) {
-            System.err.println("Error deleting repository: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error deleting repository: " + e.getMessage());
         }
+
     }
 
 }

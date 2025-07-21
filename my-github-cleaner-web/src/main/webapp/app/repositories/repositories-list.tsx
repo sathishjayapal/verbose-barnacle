@@ -27,7 +27,8 @@ export default function RepositoriesList() {
 
   const getAllRepositorieses = async () => {
     try {
-      const response = await axios.get('/api/repositories?' + listParams,{ headers: { authorization: 'Basic ' + window.btoa('viewer' + ":" + 'Bootify!') } });
+      const response = await axios.get('/api/repositories?' + listParams,{ headers:
+            { authorization: 'Basic ' + window.btoa('viewer' + ":" + 'Bootify!') } });
       setRepositorieses(response.data);
     } catch (error: any) {
       handleServerError(error, navigate);
@@ -77,7 +78,7 @@ export default function RepositoriesList() {
           <tr>
             <th scope="col" className="text-left p-2">{t('repositories.id.label')}</th>
             <th scope="col" className="text-left p-2">{t('repositories.repoName.label')}</th>
-            <th scope="col" className="text-left p-2">{t('repositories.repoUpdatedDate.label')}</th>
+            <th scope="col" className="text-left p-2">{t('repositories.description.label')}</th>
             <th></th>
           </tr>
         </thead>

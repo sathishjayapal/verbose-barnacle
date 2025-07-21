@@ -30,7 +30,7 @@
         "repoName,ASC": "Sort by Repo Name (Ascending)",
         "repoCreatedDate,ASC": "Sort by Repo Created Date (Ascending)"
       },
-      "filter": "Filter by Id",
+      "filter": "Filter by Repo Name",
       "edit": "Edit",
       "delete": "Delete"
     },

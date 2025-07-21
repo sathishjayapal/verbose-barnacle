@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
+import java.util.Optional;
+
 @Service
 public class RepositoriesService {
 
@@ -19,13 +22,16 @@ public class RepositoriesService {
     public Boolean countByRecords() {
         return repositoriesRepository.count() > 0;
     }
-    public Mono<Long> createReactive(GitHubRepository gitHubRepository) {
+    public Long count() {
+        return repositoriesRepository.count();
+    }
+        public Mono<Long> createReactive(GitHubRepository gitHubRepository) {
         RepositoriesDTO repositoriesDTO = new RepositoriesDTO();
         repositoriesDTO.setRepoName(gitHubRepository.getName());
         repositoriesDTO.setRepoCreatedDate(gitHubRepository.getCreatedAt());
         repositoriesDTO.setRepoUpdatedDate(gitHubRepository.getUpdatedAt());
         repositoriesDTO.setCloneUrl(gitHubRepository.getCloneUrl());
-        repositoriesDTO.setDescription(gitHubRepository.getDescription());
+        repositoriesDTO.setDescription(Optional.ofNullable(gitHubRepository.getDescription()).orElse("No Description Available"));
 
         return Mono.fromCallable(() -> {
                     final var repositories = new Repositories();
@@ -55,6 +61,10 @@ public class RepositoriesService {
                         .toList(),
                 pageable,
                 page.getTotalElements());
+    }
+
+    public List<String> findAllRepoNames() { // New method
+        return repositoriesRepository.findAllRepoNames();
     }
 
     public RepositoriesDTO get(final Long id) {
@@ -96,7 +106,7 @@ public class RepositoriesService {
         repositories.setRepoCreatedDate(repositoriesDTO.getRepoCreatedDate());
         repositories.setRepoUpdatedDate(repositoriesDTO.getRepoUpdatedDate());
         repositories.setCloneUrl(repositoriesDTO.getCloneUrl());
-        repositories.setDescription(repositoriesDTO.getDescription());
+        repositories.setDescription(Optional.ofNullable(repositoriesDTO.getDescription()).orElse("No Description Available"));
         return repositories;
     }
 

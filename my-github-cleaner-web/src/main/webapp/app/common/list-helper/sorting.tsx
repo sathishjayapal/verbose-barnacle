@@ -12,6 +12,7 @@ export default function Sorting({ sortOptions, rowClass }: SortingParams) {
       sort: event.target!.value
     });
     if (searchParams.get('filter')) {
+
       sortParams.append('filter', searchParams.get('filter')!);
     }
     navigate({
