@@ -35,8 +35,8 @@ public class GitHubController {
         return gitHubService.getAllUserRepositoriesPaginated(username);
     }
 
-    @GetMapping("/repos/all")
-    public Flux<GitHubRepository> getAllMyRepositories() {
-        return gitHubService.getAllAuthenticatedUserRepositoriesPaginated();
-    }
+//    @GetMapping("/repos/all")
+//    public Flux<GitHubRepository> getAllMyRepositories() {
+//        return gitHubService.getAllAuthenticatedUserRepositoriesPaginated();
+//    }
 }

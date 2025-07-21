@@ -7,8 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class GitHubDataRunner implements CommandLineRunner {
@@ -24,15 +29,44 @@ public class GitHubDataRunner implements CommandLineRunner {
         this.repositoriesService = repositoriesService;
         this.environment = environment;
     }
+    @Scheduled(fixedDelay= 2000L)
+    private Boolean findMissingRepositories() {
+        System.out.println("Comparing GitHub repositories with database records...");
+
+        // Get all repository names from GitHub
+        List<GitHubRepository> githubRepos = gitHubService.getAllUserRepositoriesPaginated(environment.getProperty("githubusername")).collectList().block();
+        Set<String> githubRepoNames = githubRepos.stream()
+                .map(GitHubRepository::getName)
+                .collect(Collectors.toSet());
+
+        // Get all repository names from the database
+        List<String> dbRepoNamesList = repositoriesService.findAllRepoNames();
+        Set<String> dbRepoNames = dbRepoNamesList.stream().collect(Collectors.toSet());
+
+        // Find repositories that are on GitHub but not in the database
+        Set<String> missingInRepo = dbRepoNames.stream()
+                .filter(repoName -> !githubRepoNames.contains(repoName))
+                .collect(Collectors.toSet());
+
+        Set<String> missingInDb = githubRepoNames.stream()
+                .filter(repoName -> !dbRepoNames.contains(repoName))
+                .collect(Collectors.toSet());
+        if (missingInDb.isEmpty()) {
+            System.out.println("No missing repositories found. All GitHub repositories are present in the database.");
+            return Boolean.TRUE;
+        } else {
+            System.out.println("The following repositories are on GitHub but missing in the database:");
+            missingInDb.forEach(System.out::println);
+            return Boolean.FALSE;
+        }
+    }
 
     public void run(String... args) {
-        Flux<GitHubRepository> repositoriesFlux = gitHubService.
-                getAllUserRepositoriesPaginated(environment.getProperty("githubusername"));
-        if (repositoriesService.countByRecords()) {
-            logger.info("Repositories already exist in the database. Skipping data fetch.");
+        if (findMissingRepositories()) {
+            Flux<GitHubRepository> repositoriesFlux = gitHubService.
+                    getAllUserRepositoriesPaginated(environment.getProperty("githubusername"));
             saveRepositoriesReactive(repositoriesFlux).blockLast();
-        } else
-            saveRepositoriesReactive(repositoriesFlux).blockLast();
+        }
     }
 
     private Flux<Long> saveRepositoriesReactive(Flux<GitHubRepository> repositoriesFlux) {

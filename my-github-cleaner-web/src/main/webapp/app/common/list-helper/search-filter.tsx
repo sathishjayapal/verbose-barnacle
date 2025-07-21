@@ -11,13 +11,17 @@ export default function SearchFilter({ placeholder }: SearchFilterParams) {
 
   const handleSubmit = (event: FormEvent) => {
     const input = (event.target as HTMLFormElement)!.querySelector('input') as HTMLInputElement;
+
     const filterParams = new URLSearchParams({
       filter: input.value
+
     });
+    console.error('Coming to filer here'+pathname + ' ' + filterParams.toString());
     navigate({
       pathname: pathname,
       search: filterParams.toString()
     });
+
     event.preventDefault();
   };
 

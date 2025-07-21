@@ -24,6 +24,11 @@ spring:
     kubernetes:
       discovery:
         all-namespaces: true
+  config:
+    import:
+      - application-prod.yml
+
+
 error:
   handling:
     http-status-in-json-response: true
@@ -43,5 +48,3 @@ management:
   endpoint:
     health:
       show-details: always
-github:
-  token: ${GITHUB_TOKEN}
