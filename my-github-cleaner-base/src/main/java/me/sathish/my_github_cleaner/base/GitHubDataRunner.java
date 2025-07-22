@@ -29,7 +29,7 @@ public class GitHubDataRunner implements CommandLineRunner {
         this.repositoriesService = repositoriesService;
         this.environment = environment;
     }
-    @Scheduled(fixedDelay= 2000L)
+    @Scheduled(fixedDelay= 86400000L)
     private Boolean findMissingRepositories() {
         System.out.println("Comparing GitHub repositories with database records...");
 
