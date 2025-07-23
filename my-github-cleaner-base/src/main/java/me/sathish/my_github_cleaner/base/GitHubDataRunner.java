@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,8 +30,9 @@ public class GitHubDataRunner implements CommandLineRunner {
         this.repositoriesService = repositoriesService;
         this.environment = environment;
     }
-    @Scheduled(fixedDelay= 86400000L)
-    private Boolean findMissingRepositories() {
+
+    @Scheduled(fixedDelay = 86400000L)
+    private Set<String> findMissingRepositories() {
         System.out.println("Comparing GitHub repositories with database records...");
 
         // Get all repository names from GitHub
@@ -53,18 +55,22 @@ public class GitHubDataRunner implements CommandLineRunner {
                 .collect(Collectors.toSet());
         if (missingInDb.isEmpty()) {
             System.out.println("No missing repositories found. All GitHub repositories are present in the database.");
-            return Boolean.TRUE;
+            return Collections.emptySet();
         } else {
             System.out.println("The following repositories are on GitHub but missing in the database:");
             missingInDb.forEach(System.out::println);
-            return Boolean.FALSE;
+            return missingInDb;
         }
     }
 
     public void run(String... args) {
-        if (findMissingRepositories()) {
+        Set<String> missingInDb = findMissingRepositories();
+        if (missingInDb.size() > 0) {
             Flux<GitHubRepository> repositoriesFlux = gitHubService.
-                    getAllUserRepositoriesPaginated(environment.getProperty("githubusername"));
+                    getUserRepositories(environment.getProperty("githubusername"))
+                    .flux() // Convert Mono<List<GitHubRepository>> to Flux<GitHubRepository>
+                    .flatMapIterable(list -> list) // Flatten the list into individual GitHubRepository objects
+                    .filter(repo -> missingInDb.contains(repo.getName())); // Filter by missingInDb names
             saveRepositoriesReactive(repositoriesFlux).blockLast();
         }
     }
