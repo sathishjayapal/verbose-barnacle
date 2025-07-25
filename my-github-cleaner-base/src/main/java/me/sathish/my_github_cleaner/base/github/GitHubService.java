@@ -59,6 +59,19 @@ public class GitHubService {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<GitHubRepository>>() {});
     }
+    public Mono<GitHubRepository> getAuthenticatedUserRepository(String repoName) {
+        String gitUserName= environment.getProperty("githubusername");
+        if (githubToken == null || githubToken.isEmpty()) {
+            return Mono.error(new RuntimeException("GitHub token is required for authenticated requests"));
+        }
+
+        return webClient
+                .get()
+                .uri("/{gitUserName}/repos/{repo}", gitUserName,repoName)
+                .headers(headers -> headers.setBearerAuth(githubToken))
+                .retrieve()
+                .bodyToMono(GitHubRepository.class);
+    }
 
     public Flux<GitHubRepository> getAllUserRepositoriesPaginated(String username) {
         return getAllRepositoriesRecursive(1, username, "/users/{username}/repos");
