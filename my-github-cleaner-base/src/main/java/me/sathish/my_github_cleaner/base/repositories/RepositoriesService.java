@@ -68,10 +68,14 @@ public class RepositoriesService {
     }
 
     public RepositoriesDTO get(final Long id) {
-        return repositoriesRepository
-                .findById(id)
-                .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
-                .orElseThrow(NotFoundException::new);
+        System.out.println("Fetching repository with ID: " + id);
+            return repositoriesRepository
+                    .findById(id)
+                    .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
+                    .orElseThrow(NotFoundException::new);
+
+
+
     }
 
     public Long create(final RepositoriesDTO repositoriesDTO) {
