@@ -40,6 +40,10 @@ export default function RepositoriesList() {
       return;
     }
     try {
+      axios.defaults.auth = {
+        username: 'viewer',
+        password: 'Bootify!'
+      };
       await axios.delete('/api/repositories/' + id);
       navigate('/repositories', {
             state: {
