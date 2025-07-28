@@ -1,3 +1,4 @@
+
 spring:
   datasource:
     url: ${JDBC_DATABASE_URL}
@@ -48,3 +49,9 @@ management:
   endpoint:
     health:
       show-details: always
+server:
+  port: ${PORT:7080}
+
+# Eventstracker service configuration
+eventstracker:
+  url: ${EVENTSTRACKER_URL:http://localhost:9081}

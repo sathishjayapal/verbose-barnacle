@@ -1,5 +1,6 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
+import me.sathish.my_github_cleaner.base.github.GitHubDeleter;
 import me.sathish.my_github_cleaner.base.util.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -15,17 +16,22 @@ import java.util.Optional;
 public class RepositoriesService {
 
     private final RepositoriesRepository repositoriesRepository;
+    private final GitHubDeleter gitHubDeleter;
 
-    public RepositoriesService(final RepositoriesRepository repositoriesRepository) {
+    public RepositoriesService(final RepositoriesRepository repositoriesRepository, GitHubDeleter gitHubDeleter) {
         this.repositoriesRepository = repositoriesRepository;
+        this.gitHubDeleter = gitHubDeleter;
     }
+
     public Boolean countByRecords() {
         return repositoriesRepository.count() > 0;
     }
+
     public Long count() {
         return repositoriesRepository.count();
     }
-        public Mono<Long> createReactive(GitHubRepository gitHubRepository) {
+
+    public Mono<Long> createReactive(GitHubRepository gitHubRepository) {
         RepositoriesDTO repositoriesDTO = new RepositoriesDTO();
         repositoriesDTO.setRepoName(gitHubRepository.getName());
         repositoriesDTO.setRepoCreatedDate(gitHubRepository.getCreatedAt());
@@ -69,11 +75,10 @@ public class RepositoriesService {
 
     public RepositoriesDTO get(final Long id) {
         System.out.println("Fetching repository with ID: " + id);
-            return repositoriesRepository
-                    .findById(id)
-                    .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
-                    .orElseThrow(NotFoundException::new);
-
+        return repositoriesRepository
+                .findById(id)
+                .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
+                .orElseThrow(NotFoundException::new);
 
 
     }
@@ -91,7 +96,11 @@ public class RepositoriesService {
     }
 
     public void delete(final Long id) {
-        repositoriesRepository.deleteById(id);
+        RepositoriesDTO repositoriesDTO = new RepositoriesDTO();
+        Repositories repository = repositoriesRepository.findById(id).orElseThrow(NotFoundException::new);
+        mapToDTO(repository, repositoriesDTO);
+        gitHubDeleter.deleteRepository(repositoriesDTO.getRepoName());
+//        repositoriesRepository.deleteById(id);
     }
 
     private RepositoriesDTO mapToDTO(final Repositories repositories, final RepositoriesDTO repositoriesDTO) {
