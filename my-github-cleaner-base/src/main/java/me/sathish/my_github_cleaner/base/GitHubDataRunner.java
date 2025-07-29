@@ -1,5 +1,6 @@
 package me.sathish.my_github_cleaner.base;
 
+import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.github.GitHubService;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import me.sathish.my_github_cleaner.base.repositories.RepositoriesService;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -21,14 +23,16 @@ import java.util.stream.Collectors;
 public class GitHubDataRunner implements CommandLineRunner {
     private final GitHubService gitHubService;
     private final RepositoriesService repositoriesService;
+    private final EventTrackerService eventTrackerService;
     private final Environment environment;
     Logger logger = LoggerFactory.getLogger(GitHubDataRunner.class);
 
     public GitHubDataRunner(GitHubService gitHubService,
-                            RepositoriesService repositoriesService,
+                            RepositoriesService repositoriesService, EventTrackerService eventTrackerService,
                             Environment environment) {
         this.gitHubService = gitHubService;
         this.repositoriesService = repositoriesService;
+        this.eventTrackerService = eventTrackerService;
         this.environment = environment;
     }
 
@@ -62,12 +66,15 @@ public class GitHubDataRunner implements CommandLineRunner {
             missingInDb.forEach(System.out::println);
             return missingInDb;
         }
+
     }
 
     public void run(String... args) {
         Set<String> missingInDb = findMissingRepositories();
+
         // Create a Flux of repositories by getting each missing repository individually
         if (missingInDb.size() > 0) {
+
             Flux<GitHubRepository> repositoriesFlux = Flux.fromIterable(missingInDb)
                     .flatMap(repoName -> gitHubService.getAuthenticatedUserRepository(repoName)
                             .onErrorResume(e -> {
@@ -77,17 +84,51 @@ public class GitHubDataRunner implements CommandLineRunner {
                             })
                     );
 
-            saveRepositoriesReactive(repositoriesFlux).blockLast();
+            List<GitHubRepository> reposToSave = repositoriesFlux.collectList().block();
+
+            if (reposToSave != null && !reposToSave.isEmpty()) {
+                GitHubRepository firstRepo = reposToSave.get(0); // Get the first successfully fetched repo
+                Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
+                saveRepositoriesReactive(fluxFromList).blockLast();
+
+                String repositoryName = firstRepo.getName();
+                String payLoad = new StringBuffer("Saved to DB repository").append(String.format("{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
+                        repositoryName, LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
+                eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
+            } else {
+                logger.info("No new missing repositories were successfully fetched for saving to DB.");
+                String payLoad = new StringBuffer("No new repositories to DB repository").append(String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}", LocalDateTime.now(), environment.getProperty("githubusername"), "")).toString(); // Added missing argument
+                eventTrackerService.sendEventToEventstracker("NA", payLoad);
+            }
         } else {
             if (repositoriesService.countByRecords()) {
                 System.out.println("Repositories already exist in the database. No new repositories to fetch.");
-                return;
+                String payLoad = new StringBuffer("No new repositories to DB repository").append(String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}", LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
+                eventTrackerService.sendEventToEventstracker("NA", payLoad);
             } else {
-                Flux<GitHubRepository> repositoriesFlux = gitHubService.
+                Flux<GitHubRepository> allUserReposFlux = gitHubService.
                         getAllUserRepositoriesPaginated(environment.getProperty("githubusername"));
-                saveRepositoriesReactive(repositoriesFlux).blockLast();
+
+                // Collect the repositories into a list first to avoid consuming the Flux multiple times
+                List<GitHubRepository> reposToSave = allUserReposFlux.collectList().block();
+
+                if (reposToSave != null && !reposToSave.isEmpty()) {
+                    GitHubRepository firstRepo = reposToSave.get(0); // Get the first fetched repo
+                    Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
+                    saveRepositoriesReactive(fluxFromList).blockLast();
+
+                    String repositoryName = firstRepo.getName();
+                    String payLoad = new StringBuffer("Saved to DB repository").append(String.format("{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
+                            repositoryName, LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
+                    eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
+                } else {
+                    logger.info("No user repositories found or fetched for saving to DB.");
+                    String payLoad = new StringBuffer("No new repositories to DB repository").append(String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}", LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
+                    eventTrackerService.sendEventToEventstracker("NA", payLoad);
+                }
             }
         }
+
     }
 
 
