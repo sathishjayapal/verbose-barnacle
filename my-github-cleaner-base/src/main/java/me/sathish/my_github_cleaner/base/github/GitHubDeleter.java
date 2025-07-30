@@ -28,31 +28,27 @@ public class GitHubDeleter {
 
         try {
             HttpClient client = HttpClient.newHttpClient();
-
+            String githubusername = environment.getProperty("githubusername");
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.github.com/repos/" + environment.getProperty("githubusername") + "/" + repositoryName))
+                    .uri(URI.create("https://api.github.com/repos/" + githubusername + "/" + repositoryName))
                     .header("Authorization", "token " + environment.getProperty("GITHUB_TOKEN"))
                     .header("Accept", "application/vnd.github.v3+json")
                     .DELETE()
                     .build();
-
             HttpResponse<String> response = client.send(request,
                     HttpResponse.BodyHandlers.ofString());
-
             if (response.statusCode() == 204) {
                 System.out.println("Repository deleted successfully!");
                 String payLoad = new StringBuffer("Repository deleted successfully!").append(String.format("{\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
-                        repositoryName, LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
+                        repositoryName, LocalDateTime.now(), githubusername)).toString();
                 // Send event to Eventstracker after successful deletion
                 eventTrackerService.sendEventToEventstracker(repositoryName,payLoad);
-                
             } else {
                 System.out.println("Failed to delete repository. Status: " +
                         response.statusCode());
                 String payLoad = new StringBuffer("Failed to delete repository").append(String.format("{\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
-                        repositoryName, LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
+                        repositoryName, LocalDateTime.now(), githubusername)).toString();
                 eventTrackerService.sendEventToEventstracker(repositoryName,payLoad);
-
                 System.out.println("Response: " + response.body());
             }
             return response;
