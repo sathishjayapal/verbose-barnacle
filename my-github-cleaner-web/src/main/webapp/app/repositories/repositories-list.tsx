@@ -90,7 +90,7 @@ export default function RepositoriesList() {
               <div className="float-right whitespace-nowrap">
                 <Link to={'/repositoriess/edit/' + repositories.id} className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-3 rounded px-2.5 py-1.5 text-sm">{t('repositories.list.edit')}</Link>
                 <span> </span>
-                <button type="button" onClick={() => confirmDelete(repositories.id!)} className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-3 rounded px-2.5 py-1.5 text-sm">{t('repositories.list.delete')}</button>
+                <button type="button" onClick={() => confirmDelete(repositories.id!)} className="inline-block text-white bg-gray-500 hover:bg-gray-600 focus:ring-gray-200 focus:ring-3 rounded px-2.5 py-1.5 text-sm cursor-pointer">{t('repositories.list.delete')}</button>
               </div>
             </td>
           </tr>

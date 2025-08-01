@@ -82,7 +82,7 @@ export default function RepositoriesEdit() {
       <InputRow useFormResult={useFormResult} object="repositories" field="repoUpdatedDate" required={true} type="datetimepicker" />
       <InputRow useFormResult={useFormResult} object="repositories" field="cloneUrl" required={true} type="textarea" />
       <InputRow useFormResult={useFormResult} object="repositories" field="description" required={true} type="textarea" />
-      <input type="submit" value={t('repositories.edit.headline')} className="inline-block text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-300  focus:ring-4 rounded px-5 py-2 mt-6" />
+      <input type="submit" value={t('repositories.edit.headline')} className="inline-block text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-300  focus:ring-4 rounded px-5 py-2 cursor-pointer mt-6" />
     </form>
   </>);
 }
