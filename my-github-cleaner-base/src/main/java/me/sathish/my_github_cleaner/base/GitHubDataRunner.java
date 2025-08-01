@@ -48,6 +48,7 @@ public class GitHubDataRunner implements CommandLineRunner {
 
         // Get all repository names from the database
         List<String> dbRepoNamesList = repositoriesService.findAllRepoNames();
+        System.out.println("dbRepoNamesList size: " + dbRepoNamesList.size()   );
         Set<String> dbRepoNames = dbRepoNamesList.stream().collect(Collectors.toSet());
 
         // Find repositories that are on GitHub but not in the database
