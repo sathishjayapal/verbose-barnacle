@@ -25,7 +25,7 @@ public class GitHubDeleter {
     private final ObjectMapper objectMapper = new ObjectMapper(); // Keep ObjectMapper for other potential uses or remove if not needed elsewhere
 
     public HttpResponse deleteRepository(String repositoryName) {
-
+        System.out.println("Delete repo method starts");
         try {
             HttpClient client = HttpClient.newHttpClient();
             String githubusername = environment.getProperty("githubusername");
