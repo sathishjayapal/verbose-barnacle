@@ -25,6 +25,12 @@ public class EventTrackerService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Send an event to the Eventstracker service to log the deletion of the GitHub repository.
+     *
+     * @param repositoryName The name of the repository that was deleted.
+     * @param payLoad        The payload associated with the event.
+     */
     public void sendEventToEventstracker(String repositoryName, String payLoad) {
         try {
             // Create event payload
@@ -38,6 +44,7 @@ public class EventTrackerService {
 
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
 
+            // Create HTTP client and request
             HttpClient client = HttpClient.newHttpClient();
             String eventstrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
 
@@ -49,6 +56,7 @@ public class EventTrackerService {
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .build();
 
+            // Send the request and log the response
             HttpResponse<String> eventResponse = client.send(eventRequest,
                     HttpResponse.BodyHandlers.ofString());
 

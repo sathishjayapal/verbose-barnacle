@@ -2,6 +2,8 @@ package me.sathish.my_github_cleaner.base.github;
 
 import java.time.Duration;
 import java.util.List;
+
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import org.slf4j.Logger;
@@ -84,11 +86,27 @@ public class GitHubService {
 
     private Flux<GitHubRepository> getAllRepositoriesRecursive(int page, String username, String endpoint) {
         return webClient.get()
-                .uri(buildUri(endpoint, username, page, PER_PAGE, SORT_PARAM))
+                .uri(uriBuilder -> {
+                    if (username != null) {
+                        return uriBuilder
+                                .path(endpoint)
+                                .queryParam("per_page", PER_PAGE)
+                                .queryParam("page", page)
+                                .queryParam("sort", SORT_PARAM)
+                                .build(username);
+                    } else {
+                        return uriBuilder
+                                .path(endpoint)
+                                .queryParam("per_page", PER_PAGE)
+                                .queryParam("page", page)
+                                .queryParam("sort", SORT_PARAM)
+                                .build();
+                    }
+                })
                 .headers(this::setAuthorizationHeader)
                 .retrieve()
                 .bodyToFlux(GitHubRepository.class)
-                .timeout(Duration.ofSeconds(30))  // Add timeout
+//                .timeout(Duration.ofSeconds(30))  // Add timeout
                 .onErrorResume(error -> {
                     log.error("Error fetching repositories: {}", error.getMessage());
                     return error instanceof Exception
@@ -146,11 +164,35 @@ public class GitHubService {
 
     private Flux<GitHubRepository> fetchNextPage(int nextPage, String username, String endpoint) {
         return webClient.get()
-                .uri(buildUri(endpoint, username, nextPage, PER_PAGE, SORT_PARAM))
+                .uri(uriBuilder -> {
+                    if (username != null) {
+                        return uriBuilder
+                                .path(endpoint)
+                                .queryParam("per_page", PER_PAGE)
+                                .queryParam("page", nextPage)
+                                .queryParam("sort", SORT_PARAM)
+                                .build(username);
+                    } else {
+                        return uriBuilder
+                                .path(endpoint)
+                                .queryParam("per_page", PER_PAGE)
+                                .queryParam("page", nextPage)
+                                .queryParam("sort", SORT_PARAM)
+                                .build();
+                    }
+                })
                 .headers(this::setAuthorizationHeader)
                 .retrieve()
                 .bodyToFlux(GitHubRepository.class)
                 .take(PER_PAGE)
                 .onErrorResume(error -> Flux.empty()); // Add error handling
+
+    }
+
+    @PostConstruct
+    public void validateConfiguration() {
+        if (!isValidToken()) {
+            throw new RuntimeException("GitHub token is required. Please set the GITHUB_TOKEN environment variable.");
+        }
     }
 }
