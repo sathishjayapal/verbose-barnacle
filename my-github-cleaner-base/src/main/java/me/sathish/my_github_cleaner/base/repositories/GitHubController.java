@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/github")
@@ -20,18 +18,18 @@ public class GitHubController {
     private GitHubService gitHubService;
 
     @GetMapping("/repos/{username}")
-    public Mono<List<GitHubRepository>> getUserRepositories(@PathVariable String username) {
+    public List<GitHubRepository> getUserRepositories(@PathVariable String username) {
         System.out.println("Not making any request to GitHub API if username is empty");
         return gitHubService.getUserRepositories(username);
     }
 
     @GetMapping("/repos")
-    public Mono<List<GitHubRepository>> getMyRepositories() {
+    public List<GitHubRepository> getMyRepositories() {
         return gitHubService.getAuthenticatedUserRepositories();
     }
 
     @GetMapping("/repos/{username}/all")
-    public Flux<GitHubRepository> getAllUserRepositories(@PathVariable String username) {
+    public List<GitHubRepository> getAllUserRepositories(@PathVariable String username) {
         return gitHubService.getAllUserRepositoriesPaginated(username);
     }
 

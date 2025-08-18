@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,13 +40,9 @@ public class GitHubDataRunner implements CommandLineRunner {
     @Scheduled(fixedDelay = 86400000L)
     private Set<String> findMissingRepositories() {
         System.out.println("Comparing GitHub repositories with database records...");
-
-        // Get all repository names from GitHub
-        List<GitHubRepository> githubRepos = gitHubService.getAllUserRepositoriesPaginated(environment.getProperty("githubusername")).collectList().block();
-        Set<String> githubRepoNames = githubRepos.stream()
-                .map(GitHubRepository::getName)
+        Set<String> githubRepoNames = gitHubService.getAuthenticatedUserRepositories()
+                .stream().map(GitHubRepository::getName)
                 .collect(Collectors.toSet());
-
         // Get all repository names from the database
         List<String> dbRepoNamesList = repositoriesService.findAllRepoNames();
         System.out.println("dbRepoNamesList size: " + dbRepoNamesList.size()   );
@@ -55,6 +52,12 @@ public class GitHubDataRunner implements CommandLineRunner {
         Set<String> missingInRepo = dbRepoNames.stream()
                 .filter(repoName -> !githubRepoNames.contains(repoName))
                 .collect(Collectors.toSet());
+        if (missingInRepo.isEmpty()) {
+            System.out.println("No missing repositories found. All GitHub repositories are present in the database.");
+        } else {
+            System.out.println("The following repositories are on GitHub but missing in the database:");
+            missingInRepo.forEach(System.out::println);
+        }
 
         Set<String> missingInDb = githubRepoNames.stream()
                 .filter(repoName -> !dbRepoNames.contains(repoName))
@@ -67,7 +70,6 @@ public class GitHubDataRunner implements CommandLineRunner {
             missingInDb.forEach(System.out::println);
             return missingInDb;
         }
-
     }
 
     public void run(String... args) {
@@ -76,19 +78,21 @@ public class GitHubDataRunner implements CommandLineRunner {
         // Create a Flux of repositories by getting each missing repository individually
         if (missingInDb.size() > 0) {
 
-            Flux<GitHubRepository> repositoriesFlux = Flux.fromIterable(missingInDb)
-                    .flatMap(repoName -> gitHubService.getAuthenticatedUserRepository(repoName)
-                            .onErrorResume(e -> {
-                                // Log error but continue with other repositories
-                                System.err.println("Error fetching repository " + repoName + ": " + e.getMessage());
-                                return Mono.empty();
-                            })
-                    );
+//            Flux<GitHubRepository> repositoriesFlux = Flux.fromIterable(missingInDb)
+//                    .flatMap(repoName -> gitHubService.getAuthenticatedUserRepository(repoName)
+//                            .onErrorResume(e -> {
+//                                // Log error but continue with other repositories
+//                                System.err.println("Error fetching repository " + repoName + ": " + e.getMessage());
+//                                return Mono.empty();
+//                            })
+//                    );
 
-            List<GitHubRepository> reposToSave = repositoriesFlux.collectList().block();
+            List<GitHubRepository> reposToSave = missingInDb.stream().
+                    map(repoName -> gitHubService.getAuthenticatedUserRepository(repoName))
+                    .collect(Collectors.toList());
 
             if (reposToSave != null && !reposToSave.isEmpty()) {
-                GitHubRepository firstRepo = reposToSave.get(0); // Get the first successfully fetched repo
+                GitHubRepository firstRepo = reposToSave.getFirst(); // Get the first successfully fetched repo
                 Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
                 saveRepositoriesReactive(fluxFromList).blockLast();
 
@@ -107,11 +111,8 @@ public class GitHubDataRunner implements CommandLineRunner {
                 String payLoad = new StringBuffer("No new repositories to DB repository").append(String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}", LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
                 eventTrackerService.sendEventToEventstracker("NA", payLoad);
             } else {
-                Flux<GitHubRepository> allUserReposFlux = gitHubService.
+                List<GitHubRepository> reposToSave = gitHubService.
                         getAllUserRepositoriesPaginated(environment.getProperty("githubusername"));
-
-                // Collect the repositories into a list first to avoid consuming the Flux multiple times
-                List<GitHubRepository> reposToSave = allUserReposFlux.collectList().block();
 
                 if (reposToSave != null && !reposToSave.isEmpty()) {
                     GitHubRepository firstRepo = reposToSave.get(0); // Get the first fetched repo
