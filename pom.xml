@@ -9,7 +9,7 @@
         <relativePath /><!-- lookup parent from repository -->
     </parent>
     <groupId>me.sathish</groupId>
-    <artifactId>my-github-cleaner</artifactId>
+    <artifactId>verbose-barnacle</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>my-github-cleaner</name>
 
