@@ -88,14 +88,15 @@ public class GitHubDataRunner implements CommandLineRunner {
 //                    );
 
             List<GitHubRepository> reposToSave = missingInDb.stream().
-                    map(repoName -> gitHubService.getAuthenticatedUserRepository(repoName))
+                    map(repoName -> gitHubService.getAuthenticatedUserRepository(repoName)
+                            .orElse(null)) // Convert Optional to value or null
+                    .filter(repo -> repo != null) // Filter out nulls (failed fetches)  )
                     .collect(Collectors.toList());
 
             if (reposToSave != null && !reposToSave.isEmpty()) {
                 GitHubRepository firstRepo = reposToSave.getFirst(); // Get the first successfully fetched repo
                 Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
                 saveRepositoriesReactive(fluxFromList).blockLast();
-
                 String repositoryName = firstRepo.getName();
                 String payLoad = new StringBuffer("Saved to DB repository").append(String.format("{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
                         repositoryName, LocalDateTime.now(), environment.getProperty("githubusername"))).toString();
