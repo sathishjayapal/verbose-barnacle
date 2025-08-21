@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static reactor.core.publisher.Flux.empty;
 
@@ -78,17 +79,32 @@ public class GitHubService {
         return response.getBody();
     }
 
-    public GitHubRepository getAuthenticatedUserRepository(String repoName) {
+    public Optional<GitHubRepository> getAuthenticatedUserRepository(String repoName) {
         validateToken();
         String username = environment.getProperty(GITHUB_USERNAME_KEY);
-        String url = GITHUB_API_BASE_URL + USER_REPO_PATH.replace("{username}", username).replace("{repo}", repoName);
-        HttpHeaders headers = new HttpHeaders();
-        setAuthorizationHeader(headers);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<GitHubRepository> response = restTemplate.exchange(
-            url, HttpMethod.GET, entity, GitHubRepository.class
-        );
-        return response.getBody();
+        if (username == null || username.isEmpty()) {
+            throw new RuntimeException("GitHub username is not configured");
+        }
+        
+        try {
+            String url = String.format("%s/repos/%s/%s", GITHUB_API_BASE_URL, username, repoName);
+            HttpHeaders headers = new HttpHeaders();
+            setAuthorizationHeader(headers);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            
+            log.debug("Requesting repository: {}", url);
+            ResponseEntity<GitHubRepository> response = restTemplate.exchange(
+                url, 
+                HttpMethod.GET, 
+                entity, 
+                GitHubRepository.class
+            );
+            return Optional.ofNullable(response.getBody());
+        } catch (Exception e) {
+            log.error("Failed to fetch repository {}: {}", repoName, e.getMessage());
+            return Optional.empty();
+        }
+
     }
 
     public List<GitHubRepository> getAllUserRepositoriesPaginated(String username) {
