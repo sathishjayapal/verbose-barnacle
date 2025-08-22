@@ -43,7 +43,7 @@ public class EventTrackerService {
             eventDTO.setDomain(10024L); // Use GARMIN domain ID (valid existing domain)
 
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
-
+            System.out.println("Event Payload: " + jsonPayload);
             // Create HTTP client and request
             HttpClient client = HttpClient.newHttpClient();
             String eventstrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
