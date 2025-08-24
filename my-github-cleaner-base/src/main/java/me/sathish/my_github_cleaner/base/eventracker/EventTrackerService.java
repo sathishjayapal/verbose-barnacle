@@ -1,10 +1,6 @@
 package me.sathish.my_github_cleaner.base.eventracker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,6 +8,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EventTrackerService {
@@ -57,14 +56,14 @@ public class EventTrackerService {
                     .build();
 
             // Send the request and log the response
-            HttpResponse<String> eventResponse = client.send(eventRequest,
-                    HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> eventResponse = client.send(eventRequest, HttpResponse.BodyHandlers.ofString());
 
             if (eventResponse.statusCode() == 201) {
                 System.out.println("Event sent to Eventstracker successfully for repository: " + repositoryName);
             } else {
                 System.out.println("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
-                throw new RuntimeException("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
+                throw new RuntimeException(
+                        "Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
             }
 
         } catch (IOException | InterruptedException e) {
@@ -83,22 +82,52 @@ public class EventTrackerService {
         private Long domain;
 
         // Getters and setters
-        public String getEventId() { return eventId; }
-        public void setEventId(String eventId) { this.eventId = eventId; }
+        public String getEventId() {
+            return eventId;
+        }
 
-        public String getEventType() { return eventType; }
-        public void setEventType(String eventType) { this.eventType = eventType; }
+        public void setEventId(String eventId) {
+            this.eventId = eventId;
+        }
 
-        public String getPayload() { return payload; }
-        public void setPayload(String payload) { this.payload = payload; }
+        public String getEventType() {
+            return eventType;
+        }
 
-        public String getCreatedBy() { return createdBy; }
-        public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+        public void setEventType(String eventType) {
+            this.eventType = eventType;
+        }
 
-        public String getUpdatedBy() { return updatedBy; }
-        public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
+        public String getPayload() {
+            return payload;
+        }
 
-        public Long getDomain() { return domain; }
-        public void setDomain(Long domain) { this.domain = domain; }
+        public void setPayload(String payload) {
+            this.payload = payload;
+        }
+
+        public String getCreatedBy() {
+            return createdBy;
+        }
+
+        public void setCreatedBy(String createdBy) {
+            this.createdBy = createdBy;
+        }
+
+        public String getUpdatedBy() {
+            return updatedBy;
+        }
+
+        public void setUpdatedBy(String updatedBy) {
+            this.updatedBy = updatedBy;
+        }
+
+        public Long getDomain() {
+            return domain;
+        }
+
+        public void setDomain(Long domain) {
+            this.domain = domain;
+        }
     }
 }

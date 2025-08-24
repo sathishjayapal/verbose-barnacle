@@ -1,6 +1,8 @@
 package me.sathish.my_github_cleaner.base.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
+import java.util.Optional;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,15 +11,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriBuilder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static reactor.core.publisher.Flux.empty;
 
 @Service
 public class GitHubService {
@@ -28,11 +23,7 @@ public class GitHubService {
     private static final String TOKEN_REQUIRED_ERROR = "GitHub token is required for authenticated requests";
     private static final int PER_PAGE = 100;
     private static final String SORT_PARAM = "updated";
-
-    private static final String USER_REPOS_PATH = "/users/{username}/repos";
     private static final String AUTH_USER_REPOS_PATH = "/user/repos";
-    private static final String USER_REPO_PATH = "/{username}/repos/{repo}";
-
     private final Environment environment;
     private final RestTemplate restTemplate;
     private final String githubToken;
@@ -45,95 +36,55 @@ public class GitHubService {
     }
 
     public Integer getAuthenticatedUserTotalRepoCount() {
-        String url = "https://api.github.com/user";
+        String url = "https://api.github.com/user/repos";
         HttpHeaders headers = new HttpHeaders();
         setAuthorizationHeader(headers);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
         JsonNode json = response.getBody();
-        return json.get("public_repos").asInt() + json.get("total_private_repos").asInt();
+        if (json.get("public_repos") != null && json.get("total_private_repos") != null) {
+            return json.get("public_repos").asInt()
+                    + json.get("total_private_repos").asInt();
+        } else if (json.get("public_repos") != null) {
+            return json.get("public_repos").asInt();
+        } else if (json.get("total_private_repos") != null) {
+            return json.get("total_private_repos").asInt();
+        }
+        return -1;
     }
 
-    public List<GitHubRepository> getUserRepositories(String username) {
-        String url = "https://api.github.com/user/repos";
-        HttpHeaders headers = new HttpHeaders();
-        setAuthorizationHeader(headers);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<List<GitHubRepository>> response = restTemplate.exchange(
-            url, HttpMethod.GET, entity,
-            new org.springframework.core.ParameterizedTypeReference<List<GitHubRepository>>() {}
-        );
-        return response.getBody();
-    }
-
-    public List<GitHubRepository> getAuthenticatedUserRepositories() {
-        validateToken();
-        String url = buildUri(AUTH_USER_REPOS_PATH);
-        HttpHeaders headers = new HttpHeaders();
-        setAuthorizationHeader(headers);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<List<GitHubRepository>> response = restTemplate.exchange(
-            url, HttpMethod.GET, entity,
-            new org.springframework.core.ParameterizedTypeReference<List<GitHubRepository>>() {}
-        );
-        return response.getBody();
-    }
-
+    // Fetch a specific repository for the authenticated user
     public Optional<GitHubRepository> getAuthenticatedUserRepository(String repoName) {
         validateToken();
         String username = environment.getProperty(GITHUB_USERNAME_KEY);
         if (username == null || username.isEmpty()) {
             throw new RuntimeException("GitHub username is not configured");
         }
-        
+
         try {
             String url = String.format("%s/repos/%s/%s", GITHUB_API_BASE_URL, username, repoName);
             HttpHeaders headers = new HttpHeaders();
             setAuthorizationHeader(headers);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            
             log.debug("Requesting repository: {}", url);
-            ResponseEntity<GitHubRepository> response = restTemplate.exchange(
-                url, 
-                HttpMethod.GET, 
-                entity, 
-                GitHubRepository.class
-            );
+            ResponseEntity<GitHubRepository> response =
+                    restTemplate.exchange(url, HttpMethod.GET, entity, GitHubRepository.class);
             return Optional.ofNullable(response.getBody());
         } catch (Exception e) {
             log.error("Failed to fetch repository {}: {}", repoName, e.getMessage());
             return Optional.empty();
         }
-
     }
 
-    public List<GitHubRepository> getAllUserRepositoriesPaginated(String username) {
-        return getAllRepositoriesRecursive(1, username, USER_REPOS_PATH);
-    }
-
-    public List<GitHubRepository> getAllAuthenticatedUserRepositoriesPaginated() {
+    public List<GitHubRepository> fetchAllPublicRepositoriesForUser(String username) {
         validateToken();
-        return getAllRepositoriesRecursive(1, null, AUTH_USER_REPOS_PATH);
-    }
-
-    private List<GitHubRepository> getAllRepositoriesRecursive(int page, String username, String endpoint) {
-        List<GitHubRepository> allRepos = new ArrayList<>();
-        String url = buildUri(endpoint, username, page, PER_PAGE, SORT_PARAM);
-        while (true) {
-            HttpHeaders headers = new HttpHeaders();
-            setAuthorizationHeader(headers);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-            ResponseEntity<List<GitHubRepository>> response = restTemplate.exchange(
-                url, HttpMethod.GET, entity,
-                new org.springframework.core.ParameterizedTypeReference<List<GitHubRepository>>() {}
-            );
-            List<GitHubRepository> repos = response.getBody();
-            if (repos == null || repos.isEmpty()) break;
-            allRepos.addAll(repos);
-            if (repos.size() < PER_PAGE) break;
-            page++;
-        }
-        return allRepos;
+        String url = buildUri(AUTH_USER_REPOS_PATH);
+        HttpHeaders headers = new HttpHeaders();
+        setAuthorizationHeader(headers);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<List<GitHubRepository>> response = restTemplate.exchange(
+                url, HttpMethod.GET, entity, new org.springframework.core.ParameterizedTypeReference<>() {});
+        return response.getBody();
     }
 
     private void setAuthorizationHeader(HttpHeaders headers) {
