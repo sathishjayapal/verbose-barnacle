@@ -47,7 +47,7 @@ public class EventTrackerService {
             // Create HTTP client and request
             HttpClient client = HttpClient.newHttpClient();
             String eventstrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
-
+            System.out.println("Eventstracker URL: " + eventstrackerUrl);
             HttpRequest eventRequest = HttpRequest.newBuilder()
                     .uri(URI.create(eventstrackerUrl + "/api/domainEvents"))
                     .header("Content-Type", "application/json")
