@@ -1,7 +1,6 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
 import java.util.List;
-
 import me.sathish.my_github_cleaner.base.github.GitHubService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,21 +19,6 @@ public class GitHubController {
     @GetMapping("/repos/{username}")
     public List<GitHubRepository> getUserRepositories(@PathVariable String username) {
         System.out.println("Not making any request to GitHub API if username is empty");
-        return gitHubService.getUserRepositories(username);
+        return gitHubService.fetchAllPublicRepositoriesForUser(username);
     }
-
-    @GetMapping("/repos")
-    public List<GitHubRepository> getMyRepositories() {
-        return gitHubService.getAuthenticatedUserRepositories();
-    }
-
-    @GetMapping("/repos/{username}/all")
-    public List<GitHubRepository> getAllUserRepositories(@PathVariable String username) {
-        return gitHubService.getAllUserRepositoriesPaginated(username);
-    }
-
-//    @GetMapping("/repos/all")
-//    public Flux<GitHubRepository> getAllMyRepositories() {
-//        return gitHubService.getAllAuthenticatedUserRepositoriesPaginated();
-//    }
 }

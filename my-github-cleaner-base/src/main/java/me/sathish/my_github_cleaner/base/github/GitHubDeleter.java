@@ -1,17 +1,16 @@
 package me.sathish.my_github_cleaner.base.github;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.LocalDateTime;
 
 @Service
 public class GitHubDeleter {
@@ -37,7 +36,7 @@ public class GitHubDeleter {
      */
     public HttpResponse<String> deleteRepository(String repositoryName) {
         logger.info("Starting repository deletion process for: {}", repositoryName);
-        
+
         try {
             String githubUsername = environment.getProperty("githubusername");
             HttpResponse<String> response = sendDeleteRequest(githubUsername, repositoryName);
@@ -78,7 +77,8 @@ public class GitHubDeleter {
 
     private String createEventPayload(String repositoryName, String username, boolean isSuccess) {
         String status = isSuccess ? "Repository deleted successfully!" : "Failed to delete repository";
-        return String.format("%s{\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}", 
+        return String.format(
+                "%s{\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
                 status, repositoryName, LocalDateTime.now(), username);
     }
 }
