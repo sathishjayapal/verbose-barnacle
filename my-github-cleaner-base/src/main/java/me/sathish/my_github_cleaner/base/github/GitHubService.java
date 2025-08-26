@@ -31,12 +31,12 @@ public class GitHubService {
     public GitHubService(Environment environment) {
         this.environment = environment;
         this.githubToken = environment.getProperty(GITHUB_TOKEN_KEY);
-        System.out.println("GITHUB_TOKEN: " + githubToken);
         this.restTemplate = new RestTemplate();
     }
 
     public Integer getAuthenticatedUserTotalRepoCount() {
-        String url = "https://api.github.com/user/repos";
+        String url = buildUri(AUTH_USER_REPOS_PATH);
+//        String url = "https://api.github.com/user/repos";
         HttpHeaders headers = new HttpHeaders();
         setAuthorizationHeader(headers);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -78,6 +78,7 @@ public class GitHubService {
 
     public List<GitHubRepository> fetchAllPublicRepositoriesForUser(String username) {
         validateToken();
+        getAuthenticatedUserTotalRepoCount();
         String url = buildUri(AUTH_USER_REPOS_PATH);
         HttpHeaders headers = new HttpHeaders();
         setAuthorizationHeader(headers);
