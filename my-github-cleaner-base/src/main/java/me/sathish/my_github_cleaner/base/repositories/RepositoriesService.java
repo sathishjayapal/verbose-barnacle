@@ -56,7 +56,9 @@ public class RepositoriesService {
     }
 
     public void delete(final Long id) {
-        repositoriesRepository.deleteById(id);
+        final Repositories repositories = repositoriesRepository.findById(id)
+                .orElseThrow(NotFoundException::new);
+        repositoriesRepository.delete(repositories);
     }
 
     private RepositoriesDTO mapToDTO(final Repositories repositories,

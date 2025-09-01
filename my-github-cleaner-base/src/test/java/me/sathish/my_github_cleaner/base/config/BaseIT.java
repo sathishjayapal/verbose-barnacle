@@ -32,7 +32,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 public abstract class BaseIT {
 
     @ServiceConnection
-    private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:17.5");
+    private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:17.6");
     public static final String ADMIN = "admin";
     public static final String VIEWER = "viewer";
     public static final String PASSWORD = "Bootify!";
