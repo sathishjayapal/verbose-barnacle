@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.github.GitHubService;
+import me.sathish.my_github_cleaner.base.github.GitHubServiceConstants;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import me.sathish.my_github_cleaner.base.repositories.RepositoriesService;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 @Service
-public class GitHubDataRunner implements CommandLineRunner {
+public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstants {
     private final GitHubService gitHubService;
     private final RepositoriesService repositoriesService;
     private final EventTrackerService eventTrackerService;
@@ -39,7 +40,7 @@ public class GitHubDataRunner implements CommandLineRunner {
     @Scheduled(fixedDelay = 86400000L)
     private Set<String> findMissingRepositories() {
         Set<String> githubRepoNames =
-                gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty("githubusername")).stream()
+                gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty(GITHUB_USERNAME_KEY)).stream()
                         .map(GitHubRepository::getName)
                         .collect(Collectors.toSet());
         // Get all repository names from the database
@@ -89,16 +90,15 @@ public class GitHubDataRunner implements CommandLineRunner {
                 String repositoryName = firstRepo.getName();
                 String payLoad = new StringBuffer("Saved to DB repository")
                         .append(String.format(
-                                "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
-                                repositoryName, LocalDateTime.now(), environment.getProperty("githubusername")))
+                                "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
+                                repositoryName, LocalDateTime.now(), SYSTEM_USER))
                         .toString();
                 eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
             } else {
                 logger.info("No new missing repositories were successfully fetched for saving to DB.");
                 String payLoad = new StringBuffer("No new repositories to DB repository")
                         .append(String.format(
-                                "{\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
-                                LocalDateTime.now(), environment.getProperty("githubusername"), ""))
+                                "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                         .toString(); // Added missing argument
                 eventTrackerService.sendEventToEventstracker("NA", payLoad);
                 throw new RuntimeException("No new missing repositories were successfully fetched for saving to DB.");
@@ -108,13 +108,12 @@ public class GitHubDataRunner implements CommandLineRunner {
                 System.out.println("Repositories already exist in the database. No new repositories to fetch.");
                 String payLoad = new StringBuffer("No new repositories to DB repository")
                         .append(String.format(
-                                "{\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
-                                LocalDateTime.now(), environment.getProperty("githubusername")))
+                                "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                         .toString();
                 eventTrackerService.sendEventToEventstracker("NA", payLoad);
             } else {
                 List<GitHubRepository> reposToSave =
-                        gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty("githubusername"));
+                        gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty(GITHUB_USERNAME_KEY));
                 if (reposToSave != null && !reposToSave.isEmpty()) {
                     GitHubRepository firstRepo = reposToSave.get(0); // Get the first fetched repo
                     Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
@@ -122,16 +121,15 @@ public class GitHubDataRunner implements CommandLineRunner {
                     String repositoryName = firstRepo.getName();
                     String payLoad = new StringBuffer("Saved to DB repository")
                             .append(String.format(
-                                    "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
-                                    repositoryName, LocalDateTime.now(), environment.getProperty("githubusername")))
+                                    "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
+                                    repositoryName, LocalDateTime.now(), SYSTEM_USER))
                             .toString();
                     eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
                 } else {
                     logger.info("No user repositories found or fetched for saving to DB.");
                     String payLoad = new StringBuffer("No new repositories to DB repository")
                             .append(String.format(
-                                    "{\"addedAt\":\"%s\",\"addedBy\":\"%s\",\"deletedBy\":\"%s\"}",
-                                    LocalDateTime.now(), environment.getProperty("githubusername")))
+                                    "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                             .toString();
                     eventTrackerService.sendEventToEventstracker("NA", payLoad);
                 }

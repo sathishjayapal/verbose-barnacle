@@ -15,11 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
-public class GitHubService {
+public class GitHubService implements GitHubServiceConstants {
     private static final Logger log = LoggerFactory.getLogger(GitHubService.class);
-    private static final String GITHUB_API_BASE_URL = "https://api.github.com";
-    private static final String GITHUB_TOKEN_KEY = "GITHUB_TOKEN";
-    private static final String GITHUB_USERNAME_KEY = "githubusername";
     private static final String TOKEN_REQUIRED_ERROR = "GitHub token is required for authenticated requests";
     private static final int PER_PAGE = 100;
     private static final String SORT_PARAM = "updated";
@@ -36,42 +33,64 @@ public class GitHubService {
 
     public Integer getAuthenticatedUserTotalRepoCount() {
         String url = buildUri(AUTH_USER_REPOS_PATH);
-//        String url = "https://api.github.com/user/repos";
+        //        String url = "https://api.github.com/user/repos";
         HttpHeaders headers = new HttpHeaders();
         setAuthorizationHeader(headers);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
         JsonNode json = response.getBody();
-        if (json.get("public_repos") != null && json.get("total_private_repos") != null) {
-            return json.get("public_repos").asInt()
-                    + json.get("total_private_repos").asInt();
-        } else if (json.get("public_repos") != null) {
-            return json.get("public_repos").asInt();
-        } else if (json.get("total_private_repos") != null) {
-            return json.get("total_private_repos").asInt();
-        }
-        return -1;
+        if (json != null && json.size() > 0) {
+            return json.size();
+        } else return -1;
     }
 
     // Fetch a specific repository for the authenticated user
     public Optional<GitHubRepository> getAuthenticatedUserRepository(String repoName) {
         validateToken();
         String username = environment.getProperty(GITHUB_USERNAME_KEY);
+        String orgName = environment.getProperty(GITHUB_ORG_KEY);
         if (username == null || username.isEmpty()) {
             throw new RuntimeException("GitHub username is not configured");
         }
+        if (orgName == null || orgName.isEmpty()) {
+            log.error("GitHub organization name is not configured.");
+        }
+        String url = String.format("%s/repos/%s/%s", GITHUB_API_BASE_URL, username, repoName);
+        String orgUrl = String.format("%s/repos/%s/%s", GITHUB_API_BASE_URL, orgName, repoName);
+        HttpHeaders headers = new HttpHeaders();
+        setAuthorizationHeader(headers);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
 
+        // Try user repository first
         try {
-            String url = String.format("%s/repos/%s/%s", GITHUB_API_BASE_URL, username, repoName);
-            HttpHeaders headers = new HttpHeaders();
-            setAuthorizationHeader(headers);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
             log.debug("Requesting repository: {}", url);
             ResponseEntity<GitHubRepository> response =
                     restTemplate.exchange(url, HttpMethod.GET, entity, GitHubRepository.class);
+
+            // If response is null or bad, try the organization URL
+            if (response.getBody() == null && orgName != null && !orgName.isEmpty()) {
+                log.error("Primary response was null, trying organization URL: {}", orgUrl);
+                ResponseEntity<GitHubRepository> orgResponse =
+                        restTemplate.exchange(orgUrl, HttpMethod.GET, entity, GitHubRepository.class);
+                return Optional.ofNullable(orgResponse.getBody());
+            }
+
             return Optional.ofNullable(response.getBody());
         } catch (Exception e) {
-            log.error("Failed to fetch repository {}: {}", repoName, e.getMessage());
+            log.error("Exception occurred while fetching user repository {}: {}", repoName, e.getMessage());
+
+            // If exception occurred and org name is available, try organization URL
+            if (orgName != null && !orgName.isEmpty()) {
+                try {
+                    log.error("Trying organization URL due to exception: {}", orgUrl);
+                    ResponseEntity<GitHubRepository> orgResponse =
+                            restTemplate.exchange(orgUrl, HttpMethod.GET, entity, GitHubRepository.class);
+                    return Optional.ofNullable(orgResponse.getBody());
+                } catch (Exception orgException) {
+                    log.error("Failed to fetch organization repository {}: {}", repoName, orgException.getMessage());
+                }
+            }
+
             return Optional.empty();
         }
     }

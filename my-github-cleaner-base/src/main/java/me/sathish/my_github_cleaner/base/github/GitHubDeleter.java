@@ -13,7 +13,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Service
-public class GitHubDeleter {
+public class GitHubDeleter implements GitHubServiceConstants {
     private static final Logger logger = LoggerFactory.getLogger(GitHubDeleter.class);
     private static final String GITHUB_API_URL = "https://api.github.com/repos/%s/%s";
     private static final int SUCCESS_STATUS_CODE = 204;
@@ -38,7 +38,7 @@ public class GitHubDeleter {
         logger.info("Starting repository deletion process for: {}", repositoryName);
 
         try {
-            String githubUsername = environment.getProperty("githubusername");
+            String githubUsername = environment.getProperty(GITHUB_USERNAME_KEY);
             HttpResponse<String> response = sendDeleteRequest(githubUsername, repositoryName);
             handleResponse(response, repositoryName, githubUsername);
             return response;
