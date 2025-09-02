@@ -9,6 +9,7 @@ import axios from 'axios';
 import InputRow from 'app/common/input-row/input-row';
 import useDocumentTitle from 'app/common/use-document-title';
 import * as yup from 'yup';
+import { getBasicAuthHeader } from 'app/config/auth-config';
 
 
 function getSchema() {
@@ -42,9 +43,10 @@ export default function RepositoriesEdit() {
   };
 
   const prepareForm = async () => {
-    try {
-      const data = (await axios.get('/api/repositories/' + currentId,{ headers: { authorization: 'Basic ' + window.btoa('viewer' + ":" + 'Bootify!') } })).data;
-      useFormResult.reset(data);
+      try {
+      const response = await axios.get('/api/repositories/' + currentId,
+          { headers: { authorization: getBasicAuthHeader()}});
+      useFormResult.reset(response.data);
     } catch (error: any) {
       handleServerError(error, navigate);
     }
