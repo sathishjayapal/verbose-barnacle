@@ -9,6 +9,7 @@ import axios from 'axios';
 import InputRow from 'app/common/input-row/input-row';
 import useDocumentTitle from 'app/common/use-document-title';
 import * as yup from 'yup';
+import { getAuthConfig } from 'app/config/auth-config';
 
 
 function getSchema() {
@@ -43,10 +44,11 @@ export default function RepositoriesAdd() {
     window.scrollTo(0, 0);
     try {
       console.error(data);
+      const authConfig = getAuthConfig();
       await axios.post('/api/repositories', data, {
         auth: {
-          username: 'viewer',
-          password: 'Bootify!'
+          username: authConfig.username,
+          password: authConfig.password
         }
       });
       navigate('/repositories', {
