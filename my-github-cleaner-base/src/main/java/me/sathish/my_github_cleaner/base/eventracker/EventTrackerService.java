@@ -1,27 +1,58 @@
 package me.sathish.my_github_cleaner.base.eventracker;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
 
 @Service
 public class EventTrackerService {
 
     private final Environment environment;
     private final ObjectMapper objectMapper;
+    private List<DomainDTO> domainsData;
 
     @Autowired
     public EventTrackerService(Environment environment, ObjectMapper objectMapper) {
         this.environment = environment;
         this.objectMapper = objectMapper;
+    }
+
+    @PostConstruct
+    public void fetchDomainsOnStartup() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        String eventsTrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
+        String EventServiceUserName = environment.getProperty("eventstracker.username", "system");
+        String EventServicePassword = environment.getProperty("eventstracker.password", "system");
+        HttpRequest getDomainsRequest = HttpRequest.newBuilder()
+                .uri(URI.create(eventsTrackerUrl + "/api/domains"))
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString((EventServiceUserName + ":" + EventServicePassword).getBytes()))
+                .GET().build();
+        HttpResponse<String> domainsResponse = client.send(getDomainsRequest, HttpResponse.BodyHandlers.ofString());
+        if (domainsResponse.statusCode() == 200) {
+            domainsData = objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
+            System.out.println("Fetched domains on startup. List length: " + domainsData.size());
+        } else {
+            System.out.println("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
+            throw new RuntimeException("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
+        }
     }
 
     /**
@@ -32,30 +63,31 @@ public class EventTrackerService {
      */
     public void sendEventToEventstracker(String repositoryName, String payLoad) {
         try {
-            // Create event payload
             DomainEventDTO eventDTO = new DomainEventDTO();
             eventDTO.setEventId(UUID.randomUUID().toString());
-            eventDTO.setEventType("GITHUB_REPOSITORY_DELETED");
+            eventDTO.setEventType("GITHUB_REPOSITORY_PROJECT");
             eventDTO.setPayload(payLoad);
             eventDTO.setCreatedBy(environment.getProperty("githubusername", "system"));
             eventDTO.setUpdatedBy(environment.getProperty("githubusername", "system"));
-            eventDTO.setDomain(10024L); // Use GARMIN domain ID (valid existing domain)
+
+            Optional<DomainDTO> domainOpt = domainsData.stream()
+                    .filter(d -> "GITHUB_REPO".equals(d.getDomainName()))
+                    .findFirst();
+            domainOpt.ifPresent(domain -> eventDTO.setDomain(domain.getId()));
 
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
             System.out.println("Event Payload: " + jsonPayload);
-            // Create HTTP client and request
+
             HttpClient client = HttpClient.newHttpClient();
-            String eventstrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
-            System.out.println("Eventstracker URL: " + eventstrackerUrl);
-            String EventServiceUserName=environment.getProperty("eventstracker.username", "system");
-            String EventServicePassword=environment.getProperty("eventstracker.password", "system");
+            String eventsTrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
+            String EventServiceUserName = environment.getProperty("eventstracker.username", "system");
+            String EventServicePassword = environment.getProperty("eventstracker.password", "system");
+
             HttpRequest eventRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(eventstrackerUrl + "/api/domainEvents"))
+                    .uri(URI.create(eventsTrackerUrl + "/api/domainEvents"))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
-                    .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(
-                            (EventServiceUserName+":"+EventServicePassword)
-                            .getBytes()))
+                    .header("Authorization", "Basic " + Base64.getEncoder().encodeToString((EventServiceUserName + ":" + EventServicePassword).getBytes()))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .build();
 
@@ -66,14 +98,28 @@ public class EventTrackerService {
                 System.out.println("Event sent to Eventstracker successfully for repository: " + repositoryName);
             } else {
                 System.out.println("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
-                throw new RuntimeException(
-                        "Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
+                throw new RuntimeException("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
             }
 
         } catch (IOException | InterruptedException e) {
             System.err.println("Error sending event to Eventstracker: " + e.getMessage());
             throw new RuntimeException("Error sending event to Eventstracker: " + e.getMessage());
         }
+    }
+
+    @Getter
+    @Setter
+    public static class DomainDTO {
+
+        private Long id;
+
+        @NotNull
+        private String domainName;
+
+        @NotNull
+        private String status;
+
+        private String comments;
     }
 
     // Inner class to represent the DomainEventDTO for JSON serialization
