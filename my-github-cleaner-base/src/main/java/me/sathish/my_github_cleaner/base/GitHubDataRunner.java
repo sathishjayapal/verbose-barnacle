@@ -101,6 +101,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                                 "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                         .toString(); // Added missing argument
                 eventTrackerService.sendEventToEventstracker("NA", payLoad);
+                System.out.println("No new missing repositories were successfully fetched for saving to DB.");
                 throw new RuntimeException("No new missing repositories were successfully fetched for saving to DB.");
             }
         } else {
