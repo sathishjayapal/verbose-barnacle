@@ -47,11 +47,15 @@ public class EventTrackerService {
             HttpClient client = HttpClient.newHttpClient();
             String eventstrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
             System.out.println("Eventstracker URL: " + eventstrackerUrl);
+            String EventServiceUserName=environment.getProperty("eventstracker.username", "system");
+            String EventServicePassword=environment.getProperty("eventstracker.password", "system");
             HttpRequest eventRequest = HttpRequest.newBuilder()
                     .uri(URI.create(eventstrackerUrl + "/api/domainEvents"))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
-                    .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:pass".getBytes()))
+                    .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(
+                            (EventServiceUserName+":"+EventServicePassword)
+                            .getBytes()))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .build();
 
