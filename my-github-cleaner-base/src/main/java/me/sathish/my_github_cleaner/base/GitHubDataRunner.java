@@ -37,6 +37,12 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
         this.environment = environment;
     }
 
+    /**
+     * Find repositories that are on GitHub but not in the database and vice versa. This method is scheduled to run every
+     * 24 hours.
+     *
+     * @return a set of repository names that are on GitHub but not in the database
+     */
     @Scheduled(fixedDelay = 86400000L)
     private Set<String> findMissingRepositories() {
         Set<String> githubRepoNames =
@@ -72,6 +78,34 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
         }
     }
 
+    /**
+     * Called by Spring Boot at startup. Finds any repositories that are present in
+     * GitHub but not in the database and saves them to the database. If there are no
+     * new repositories, it will send an event to event tracker with the payload
+     * indicating that no new repositories were added to the database.
+     * <p>
+     * This method will also send an event to event tracker if there are no
+     * repositories present in the database.
+     * <p>
+     * This method runs once when the application starts and then runs once a day
+     * after that.
+     * <p>
+     * If there are no new missing repositories to fetch, it will fetch all repositories
+     * from GitHub and save them to the database and send an event to event tracker.
+     * <p>
+     * If there are no repositories present in the database, it will fetch all
+     * repositories from GitHub and save them to the database and send an event to
+     * event tracker.
+     * <p>
+     * If there are new missing repositories to fetch and save to the database, it will
+     * send an event to event tracker with the payload indicating that new
+     * repositories were added to the database.
+     * <p>
+     * If there are no new missing repositories to fetch and there are repositories
+     * present in the database, it will not do anything.
+     *
+     * @param args ignored
+     */
     public void run(String... args) {
         Set<String> missingInDb = findMissingRepositories();
         // Create a Flux of repositories by getting each missing repository individually
@@ -85,15 +119,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
 
             if (reposToSave != null && !reposToSave.isEmpty()) {
                 GitHubRepository firstRepo = reposToSave.getFirst(); // Get the first successfully fetched repo
-                Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
-                saveRepositoriesReactive(fluxFromList).blockLast();
-                String repositoryName = firstRepo.getName();
-                String payLoad = new StringBuffer("Saved to DB repository")
-                        .append(String.format(
-                                "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
-                                repositoryName, LocalDateTime.now(), SYSTEM_USER))
-                        .toString();
-                eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
+                saveAndEvent(reposToSave, firstRepo);
             } else {
                 logger.info("No new missing repositories were successfully fetched for saving to DB.");
                 String payLoad = new StringBuffer("No new repositories to DB repository")
@@ -101,8 +127,6 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                                 "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                         .toString(); // Added missing argument
                 eventTrackerService.sendEventToEventstracker("NA", payLoad);
-                System.out.println("No new missing repositories were successfully fetched for saving to DB.");
-                throw new RuntimeException("No new missing repositories were successfully fetched for saving to DB.");
             }
         } else {
             if (repositoriesService.countByRecords()) {
@@ -117,15 +141,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                         gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty(GITHUB_USERNAME_KEY));
                 if (reposToSave != null && !reposToSave.isEmpty()) {
                     GitHubRepository firstRepo = reposToSave.get(0); // Get the first fetched repo
-                    Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
-                    saveRepositoriesReactive(fluxFromList).blockLast();
-                    String repositoryName = firstRepo.getName();
-                    String payLoad = new StringBuffer("Saved to DB repository")
-                            .append(String.format(
-                                    "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
-                                    repositoryName, LocalDateTime.now(), SYSTEM_USER))
-                            .toString();
-                    eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
+                    saveAndEvent(reposToSave, firstRepo);
                 } else {
                     logger.info("No user repositories found or fetched for saving to DB.");
                     String payLoad = new StringBuffer("No new repositories to DB repository")
@@ -138,6 +154,36 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
         }
     }
 
+    /**
+     * Save the given list of GitHub repositories to the database using a reactive approach
+     * and then send an event to the Eventstracker service with the name of the first
+     * repository in the list.
+     *
+     * @param reposToSave the list of GitHub repositories to save to the database
+     * @param firstRepo   the first repository in the list, used for sending the event
+     */
+    private void saveAndEvent(List<GitHubRepository> reposToSave, GitHubRepository firstRepo) {
+        Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
+        saveRepositoriesReactive(fluxFromList).blockLast();
+        String repositoryName = firstRepo.getName();
+        String payLoad = new StringBuffer("Saved to DB repository")
+                .append(String.format(
+                        "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
+                        repositoryName, LocalDateTime.now(), SYSTEM_USER))
+                .toString();
+        eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
+    }
+
+    /**
+     * Save the given Flux of GitHubRepository objects to the database using the reactive RepositoriesService.
+     * <p>
+     * This method will save each repository, and if any of them fail to save (e.g., due to a duplicate repository name),
+     * it will log the error and continue with the other repositories.
+     * <p>
+     * The returned Flux will contain the IDs of the saved repositories, or an empty Flux if no repositories were saved.
+     * @param repositoriesFlux a Flux of GitHubRepository objects to save
+     * @return a Flux of the IDs of the saved repositories
+     */
     private Flux<Long> saveRepositoriesReactive(Flux<GitHubRepository> repositoriesFlux) {
         return repositoriesFlux.flatMap(gitHubRepository -> repositoriesService
                 .createReactive(gitHubRepository)
