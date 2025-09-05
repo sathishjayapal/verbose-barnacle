@@ -4,12 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -19,8 +13,15 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class EventTrackerService {
 
     private final Environment environment;
@@ -43,12 +44,17 @@ public class EventTrackerService {
                 .uri(URI.create(eventsTrackerUrl + "/api/domains"))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
-                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString((EventServiceUserName + ":" + EventServicePassword).getBytes()))
-                .GET().build();
+                .header(
+                        "Authorization",
+                        "Basic "
+                                + Base64.getEncoder()
+                                        .encodeToString((EventServiceUserName + ":" + EventServicePassword).getBytes()))
+                .GET()
+                .build();
         HttpResponse<String> domainsResponse = client.send(getDomainsRequest, HttpResponse.BodyHandlers.ofString());
         if (domainsResponse.statusCode() == 200) {
             domainsData = objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
-            System.out.println("Fetched domains on startup. List length: " + domainsData.size());
+            log.debug("Fetched domains on startup. List length: " + domainsData.size());
         } else {
             System.out.println("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
             throw new RuntimeException("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
@@ -73,7 +79,12 @@ public class EventTrackerService {
             Optional<DomainDTO> domainOpt = domainsData.stream()
                     .filter(d -> "GITHUB_REPO".equals(d.getDomainName()))
                     .findFirst();
-            domainOpt.ifPresent(domain -> eventDTO.setDomain(domain.getId()));
+            if (domainOpt.isPresent()) {
+                eventDTO.setDomain(domainOpt.get().getId());
+            } else {
+                log.error("Domain 'GITHUB_REPO' not found in domainsData");
+                throw new RuntimeException("Domain 'GITHUB_REPO' not found in domainsData");
+            }
 
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
             System.out.println("Event Payload: " + jsonPayload);
@@ -87,7 +98,12 @@ public class EventTrackerService {
                     .uri(URI.create(eventsTrackerUrl + "/api/domainEvents"))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
-                    .header("Authorization", "Basic " + Base64.getEncoder().encodeToString((EventServiceUserName + ":" + EventServicePassword).getBytes()))
+                    .header(
+                            "Authorization",
+                            "Basic "
+                                    + Base64.getEncoder()
+                                            .encodeToString(
+                                                    (EventServiceUserName + ":" + EventServicePassword).getBytes()))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .build();
 
@@ -95,14 +111,15 @@ public class EventTrackerService {
             HttpResponse<String> eventResponse = client.send(eventRequest, HttpResponse.BodyHandlers.ofString());
 
             if (eventResponse.statusCode() == 201) {
-                System.out.println("Event sent to Eventstracker successfully for repository: " + repositoryName);
+                log.debug("Event sent to Eventstracker successfully for repository: " + repositoryName);
             } else {
-                System.out.println("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
-                throw new RuntimeException("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
+                log.error("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
+                throw new RuntimeException(
+                        "Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
             }
 
         } catch (IOException | InterruptedException e) {
-            System.err.println("Error sending event to Eventstracker: " + e.getMessage());
+            log.error("Error sending event to Eventstracker: " + e.getMessage());
             throw new RuntimeException("Error sending event to Eventstracker: " + e.getMessage());
         }
     }
@@ -113,11 +130,9 @@ public class EventTrackerService {
 
         private Long id;
 
-        @NotNull
-        private String domainName;
+        @NotNull private String domainName;
 
-        @NotNull
-        private String status;
+        @NotNull private String status;
 
         private String comments;
     }
