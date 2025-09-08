@@ -1,19 +1,15 @@
 // Authentication configuration
+import { DEFAULT_CONFIG } from './default-config';
+
 export interface AuthConfig {
   username: string;
   password: string;
 }
 
-// Default configuration - should be overridden by environment variables
-const defaultConfig: AuthConfig = {
-  username: process.env.REACT_APP_AUTH_USERNAME || '',
-  password: process.env.REACT_APP_AUTH_PASSWORD || ''
-};
-
 export const getAuthConfig = (): AuthConfig => {
   return {
-    username: process.env.REACT_APP_AUTH_USERNAME || defaultConfig.username,
-    password: process.env.REACT_APP_AUTH_PASSWORD || defaultConfig.password
+    username: process.env.REACT_APP_AUTH_USERNAME || DEFAULT_CONFIG.AUTH.USERNAME,
+    password: process.env.REACT_APP_AUTH_PASSWORD || DEFAULT_CONFIG.AUTH.PASSWORD
   };
 };
 

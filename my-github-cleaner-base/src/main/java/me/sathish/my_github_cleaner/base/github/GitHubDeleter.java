@@ -39,7 +39,13 @@ public class GitHubDeleter implements GitHubServiceConstants {
 
         try {
             String githubUsername = environment.getProperty(GITHUB_USERNAME_KEY);
-            HttpResponse<String> response = sendDeleteRequest(githubUsername, repositoryName);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(String.format(GITHUB_API_URL, githubUsername, repositoryName)))
+                    .header("Authorization", "token " + environment.getProperty("GITHUB_TOKEN"))
+                    .header("Accept", "application/vnd.github.v3+json")
+                    .DELETE()
+                    .build();
+            HttpResponse<String> response= httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             handleResponse(response, repositoryName, githubUsername);
             return response;
         } catch (Exception e) {
@@ -48,26 +54,13 @@ public class GitHubDeleter implements GitHubServiceConstants {
         }
     }
 
-    private HttpResponse<String> sendDeleteRequest(String username, String repositoryName) throws Exception {
-        HttpRequest request = buildDeleteRequest(username, repositoryName);
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-
-    private HttpRequest buildDeleteRequest(String username, String repositoryName) {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(String.format(GITHUB_API_URL, username, repositoryName)))
-                .header("Authorization", "token " + environment.getProperty("GITHUB_TOKEN"))
-                .header("Accept", "application/vnd.github.v3+json")
-                .DELETE()
-                .build();
-    }
 
     private void handleResponse(HttpResponse<String> response, String repositoryName, String username) {
         boolean isSuccess = response.statusCode() == SUCCESS_STATUS_CODE;
         String status = isSuccess ? "successfully" : "failed to be";
-        logger.info("Repository {} {} deleted. Status: {}", repositoryName, status, response.statusCode());
-
+        logger.debug("Repository {} {} deleted. Status: {}", repositoryName, status, response.statusCode());
         String eventPayload = createEventPayload(repositoryName, username, isSuccess);
+
         eventTrackerService.sendEventToEventstracker(repositoryName, eventPayload);
 
         if (!isSuccess) {
