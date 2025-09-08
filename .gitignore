@@ -43,3 +43,5 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 /package-lock.json
+/logs/app.log.2025-09-06.0.gz
+/logs/app.log.2025-09-07.0.gz
