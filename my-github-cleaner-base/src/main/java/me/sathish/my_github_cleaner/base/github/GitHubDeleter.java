@@ -45,7 +45,7 @@ public class GitHubDeleter implements GitHubServiceConstants {
                     .header("Accept", "application/vnd.github.v3+json")
                     .DELETE()
                     .build();
-            HttpResponse<String> response= httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             handleResponse(response, repositoryName, githubUsername);
             return response;
         } catch (Exception e) {
@@ -53,7 +53,6 @@ public class GitHubDeleter implements GitHubServiceConstants {
             throw new RuntimeException("Error deleting repository: " + e.getMessage(), e);
         }
     }
-
 
     private void handleResponse(HttpResponse<String> response, String repositoryName, String username) {
         boolean isSuccess = response.statusCode() == SUCCESS_STATUS_CODE;
