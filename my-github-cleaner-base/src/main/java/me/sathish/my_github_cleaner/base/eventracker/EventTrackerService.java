@@ -37,9 +37,9 @@ public class EventTrackerService {
     @PostConstruct
     public void fetchDomainsOnStartup() throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
-        String eventsTrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
-        String EventServiceUserName = environment.getProperty("eventstracker.username", "system");
-        String EventServicePassword = environment.getProperty("eventstracker.password", "system");
+        String eventsTrackerUrl = environment.getProperty("eventstracker_url", "http://localhost:9081");
+        String EventServiceUserName = environment.getProperty("eventstracker_username", "system");
+        String EventServicePassword = environment.getProperty("eventstracker_password", "system");
         HttpRequest getDomainsRequest = HttpRequest.newBuilder()
                 .uri(URI.create(eventsTrackerUrl + "/api/domains"))
                 .header("Content-Type", "application/json")
@@ -64,10 +64,9 @@ public class EventTrackerService {
     /**
      * Send an event to the Eventstracker service to log the deletion of the GitHub repository.
      *
-     * @param repositoryName The name of the repository that was deleted.
-     * @param payLoad        The payload associated with the event.
+     * @param payLoad The payload associated with the event.
      */
-    public void sendEventToEventstracker(String repositoryName, String payLoad) {
+    public void sendGitHubEventToEventstracker(String payLoad) {
         try {
             DomainEventDTO eventDTO = new DomainEventDTO();
             eventDTO.setEventId(UUID.randomUUID().toString());
@@ -111,7 +110,7 @@ public class EventTrackerService {
             HttpResponse<String> eventResponse = client.send(eventRequest, HttpResponse.BodyHandlers.ofString());
 
             if (eventResponse.statusCode() == 201) {
-                log.debug("Event sent to Eventstracker successfully for repository: " + repositoryName);
+                log.debug("Event sent to Eventstracker successfully" + eventResponse.body());
             } else {
                 log.error("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
                 throw new RuntimeException(

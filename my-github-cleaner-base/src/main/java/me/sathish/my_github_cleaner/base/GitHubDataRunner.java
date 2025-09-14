@@ -126,7 +126,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                         .append(String.format(
                                 "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                         .toString(); // Added missing argument
-                eventTrackerService.sendEventToEventstracker("NA", payLoad);
+                eventTrackerService.sendGitHubEventToEventstracker(payLoad);
             }
         } else {
             if (repositoriesService.countByRecords()) {
@@ -135,7 +135,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                         .append(String.format(
                                 "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                         .toString();
-                eventTrackerService.sendEventToEventstracker("NA", payLoad);
+                eventTrackerService.sendGitHubEventToEventstracker(payLoad);
             } else {
                 List<GitHubRepository> reposToSave =
                         gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty(GITHUB_USERNAME_KEY));
@@ -148,7 +148,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                             .append(String.format(
                                     "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
                             .toString();
-                    eventTrackerService.sendEventToEventstracker("NA", payLoad);
+                    eventTrackerService.sendGitHubEventToEventstracker(payLoad);
                 }
             }
         }
@@ -171,7 +171,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                         "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
                         repositoryName, LocalDateTime.now(), SYSTEM_USER))
                 .toString();
-        eventTrackerService.sendEventToEventstracker(repositoryName, payLoad);
+        eventTrackerService.sendGitHubEventToEventstracker(payLoad);
     }
 
     /**

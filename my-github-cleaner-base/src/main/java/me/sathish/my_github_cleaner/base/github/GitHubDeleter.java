@@ -2,17 +2,19 @@ package me.sathish.my_github_cleaner.base.github;
 
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+
+import javax.net.ssl.SSLSession;
 
 @Service
 @Slf4j
@@ -38,8 +40,9 @@ public class GitHubDeleter implements GitHubServiceConstants {
      */
     public HttpResponse<String> deleteRepository(String repositoryName, Long repoRecordID) {
         log.info("Starting repository deletion process for: {}", repositoryName);
+        String githubUsername = environment.getProperty(GITHUB_USERNAME_KEY);
         try {
-            String githubUsername = environment.getProperty(GITHUB_USERNAME_KEY);
+
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(String.format(GITHUB_API_URL, githubUsername, repositoryName)))
                     .header("Authorization", "token " + environment.getProperty("GITHUB_TOKEN"))
@@ -51,7 +54,50 @@ public class GitHubDeleter implements GitHubServiceConstants {
             return response;
         } catch (Exception e) {
             log.error("Error deleting repository: {}", e.getMessage(), e);
-            throw new RuntimeException("Error deleting repository: " + e.getMessage(), e);
+            HttpResponse<String> response = new HttpResponse<String>() {
+                @Override
+                public int statusCode() {
+                    return 500;
+                }
+
+                @Override
+                public HttpRequest request() {
+                    return null;
+                }
+
+                @Override
+                public Optional<HttpResponse<String>> previousResponse() {
+                    return Optional.empty();
+                }
+
+                @Override
+                public HttpHeaders headers() {
+                    return null;
+                }
+
+                @Override
+                public String body() {
+                    return "";
+                }
+
+                @Override
+                public Optional<SSLSession> sslSession() {
+                    return Optional.empty();
+                }
+
+                @Override
+                public URI uri() {
+                    return null;
+                }
+
+                @Override
+                public HttpClient.Version version() {
+                    return null;
+                }
+            };
+            handleResponse(response, repositoryName, githubUsername, repoRecordID);
+            log.error("Response body: {}", response.body());
+            return response;
         }
     }
     private void handleResponse(HttpResponse<String> response, String repositoryName, String username, Long repoRecordID) {
@@ -59,7 +105,7 @@ public class GitHubDeleter implements GitHubServiceConstants {
         String status = isSuccess ? "successfully" : "failed to be";
         log.error("Repository {} {} {} deleted. Status: {}", repoRecordID,repositoryName, status, response.statusCode());
         String eventPayload = createEventPayload(repositoryName, username, isSuccess, repoRecordID);
-        eventTrackerService.sendEventToEventstracker(repositoryName, eventPayload);
+        eventTrackerService.sendGitHubEventToEventstracker(eventPayload);
         if (!isSuccess) {
             log.debug("Response body: {}", response.body());
         }
@@ -68,7 +114,7 @@ public class GitHubDeleter implements GitHubServiceConstants {
     private String createEventPayload(String repositoryName, String username, boolean isSuccess, Long repoRecordID) {
         String status = isSuccess ? "Repository deleted successfully!" : "Failed to delete repository";
         return String.format(
-                "%s{\"Repo Record ID\":\"%s\",\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
+                "%s{\"repoRecordId\":\"%s\",\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
                 status, repoRecordID,repositoryName, LocalDateTime.now(), username);
     }
 
