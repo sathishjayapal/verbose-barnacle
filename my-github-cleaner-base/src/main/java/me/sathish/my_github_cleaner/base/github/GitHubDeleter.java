@@ -5,6 +5,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
+
+import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +15,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class GitHubDeleter implements GitHubServiceConstants {
-    private static final Logger logger = LoggerFactory.getLogger(GitHubDeleter.class);
     private static final String GITHUB_API_URL = "https://api.github.com/repos/%s/%s";
     private static final int SUCCESS_STATUS_CODE = 204;
 
@@ -34,9 +36,8 @@ public class GitHubDeleter implements GitHubServiceConstants {
      * @param repositoryName The name of the repository to delete.
      * @return The HttpResponse from the GitHub API.
      */
-    public HttpResponse<String> deleteRepository(String repositoryName) {
-        logger.info("Starting repository deletion process for: {}", repositoryName);
-
+    public HttpResponse<String> deleteRepository(String repositoryName, Long repoRecordID) {
+        log.info("Starting repository deletion process for: {}", repositoryName);
         try {
             String githubUsername = environment.getProperty(GITHUB_USERNAME_KEY);
             HttpRequest request = HttpRequest.newBuilder()
@@ -46,31 +47,29 @@ public class GitHubDeleter implements GitHubServiceConstants {
                     .DELETE()
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            handleResponse(response, repositoryName, githubUsername);
+            handleResponse(response, repositoryName, githubUsername, repoRecordID);
             return response;
         } catch (Exception e) {
-            logger.error("Error deleting repository: {}", e.getMessage(), e);
+            log.error("Error deleting repository: {}", e.getMessage(), e);
             throw new RuntimeException("Error deleting repository: " + e.getMessage(), e);
         }
     }
-
-    private void handleResponse(HttpResponse<String> response, String repositoryName, String username) {
+    private void handleResponse(HttpResponse<String> response, String repositoryName, String username, Long repoRecordID) {
         boolean isSuccess = response.statusCode() == SUCCESS_STATUS_CODE;
         String status = isSuccess ? "successfully" : "failed to be";
-        logger.debug("Repository {} {} deleted. Status: {}", repositoryName, status, response.statusCode());
-        String eventPayload = createEventPayload(repositoryName, username, isSuccess);
-
+        log.error("Repository {} {} {} deleted. Status: {}", repoRecordID,repositoryName, status, response.statusCode());
+        String eventPayload = createEventPayload(repositoryName, username, isSuccess, repoRecordID);
         eventTrackerService.sendEventToEventstracker(repositoryName, eventPayload);
-
         if (!isSuccess) {
-            logger.debug("Response body: {}", response.body());
+            log.debug("Response body: {}", response.body());
         }
     }
 
-    private String createEventPayload(String repositoryName, String username, boolean isSuccess) {
+    private String createEventPayload(String repositoryName, String username, boolean isSuccess, Long repoRecordID) {
         String status = isSuccess ? "Repository deleted successfully!" : "Failed to delete repository";
         return String.format(
-                "%s{\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
-                status, repositoryName, LocalDateTime.now(), username);
+                "%s{\"Repo Record ID\":\"%s\",\"repositoryName\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
+                status, repoRecordID,repositoryName, LocalDateTime.now(), username);
     }
+
 }
