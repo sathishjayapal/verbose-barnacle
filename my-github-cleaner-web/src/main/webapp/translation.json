@@ -27,6 +27,7 @@
       "empty": "No Repositories could be found.",
       "sort": {
         "id,ASC": "Sort by Id (Ascending)",
+        "id,DESC": "Sort by Id (Descending)",
         "repoName,ASC": "Sort by Repo Name (Ascending)",
         "repoCreatedDate,ASC": "Sort by Repo Created Date (Ascending)"
       },

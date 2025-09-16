@@ -1,10 +1,8 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
 import java.net.http.HttpResponse;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.github.GitHubDeleter;
 import me.sathish.my_github_cleaner.base.util.NotFoundException;
@@ -79,7 +77,7 @@ public class RepositoriesService {
     }
 
     public RepositoriesDTO get(final Long id) {
-        System.out.println("Fetching repository with ID: " + id);
+        log.error("Fetching repository with ID: " + id);
         return repositoriesRepository
                 .findById(id)
                 .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
@@ -102,8 +100,7 @@ public class RepositoriesService {
         RepositoriesDTO repositoriesDTO = new RepositoriesDTO();
         Repositories repository = repositoriesRepository.findById(id).orElseThrow(NotFoundException::new);
         mapToDTO(repository, repositoriesDTO);
-        HttpResponse<String> response= gitHubDeleter.deleteRepository(repositoriesDTO.getRepoName(), id);
-
+        HttpResponse<String> response = gitHubDeleter.deleteRepository(repositoriesDTO.getRepoName(), id);
     }
 
     private RepositoriesDTO mapToDTO(final Repositories repositories, final RepositoriesDTO repositoriesDTO) {

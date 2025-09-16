@@ -1,6 +1,5 @@
 package me.sathish.my_github_cleaner.base.github;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Optional;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
@@ -29,19 +28,6 @@ public class GitHubService implements GitHubServiceConstants {
         this.environment = environment;
         this.githubToken = environment.getProperty(GITHUB_TOKEN_KEY);
         this.restTemplate = new RestTemplate();
-    }
-
-    public Integer getAuthenticatedUserTotalRepoCount() {
-        String url = buildUri(AUTH_USER_REPOS_PATH);
-        //        String url = "https://api.github.com/user/repos";
-        HttpHeaders headers = new HttpHeaders();
-        setAuthorizationHeader(headers);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
-        JsonNode json = response.getBody();
-        if (json != null && json.size() > 0) {
-            return json.size();
-        } else return -1;
     }
 
     // Fetch a specific repository for the authenticated user
@@ -96,8 +82,6 @@ public class GitHubService implements GitHubServiceConstants {
     }
 
     public List<GitHubRepository> fetchAllPublicRepositoriesForUser(String username) {
-        validateToken();
-        getAuthenticatedUserTotalRepoCount();
         String url = buildUri(AUTH_USER_REPOS_PATH);
         HttpHeaders headers = new HttpHeaders();
         setAuthorizationHeader(headers);

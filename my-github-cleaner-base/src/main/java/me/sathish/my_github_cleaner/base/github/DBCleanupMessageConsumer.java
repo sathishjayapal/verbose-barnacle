@@ -1,6 +1,7 @@
 package me.sathish.my_github_cleaner.base.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
@@ -9,8 +10,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
 @Slf4j
 public class DBCleanupMessageConsumer {
@@ -18,7 +17,10 @@ public class DBCleanupMessageConsumer {
     private final ObjectMapper objectMapper;
     private final RepositoriesRepository repositoriesRepository;
 
-    public DBCleanupMessageConsumer(EventTrackerService eventTrackerService, ObjectMapper objectMapper, RepositoriesRepository repositoriesRepository) {
+    public DBCleanupMessageConsumer(
+            EventTrackerService eventTrackerService,
+            ObjectMapper objectMapper,
+            RepositoriesRepository repositoriesRepository) {
         this.eventTrackerService = eventTrackerService;
         this.objectMapper = objectMapper;
         this.repositoriesRepository = repositoriesRepository;
@@ -32,20 +34,20 @@ public class DBCleanupMessageConsumer {
     public void consumeMessage(String message) {
         try {
             EventMessage eventMessage = objectMapper.readValue(message, EventMessage.class);
-            log.info("Received message - EventId: {}, Type: {}, Domain: {}",
+            log.info(
+                    "Received message - EventId: {}, Type: {}, Domain: {}",
                     eventMessage.getEventId(),
                     eventMessage.getEventType(),
                     eventMessage.getDomain());
 
             if (eventMessage.getEventType().equals("GITHUB_REPOSITORY_PROJECT")) {
                 RepositoryPayload payload = objectMapper.readValue(
-                    extractJsonFromPayload(eventMessage.getPayload()),
-                    RepositoryPayload.class
-                );
-                log.info("Repository deletion details - Name: {}, Deleted by: {}, at: {}",
-                    payload.getRepositoryName(),
-                    payload.getDeletedBy(),
-                    payload.getDeletedAt());
+                        extractJsonFromPayload(eventMessage.getPayload()), RepositoryPayload.class);
+                log.info(
+                        "Repository deletion details - Name: {}, Deleted by: {}, at: {}",
+                        payload.getRepositoryName(),
+                        payload.getDeletedBy(),
+                        payload.getDeletedAt());
                 repositoriesRepository.deleteById(Long.parseLong(payload.getRepoRecordId()));
                 String eventPayload = createEventPayload(payload);
                 eventTrackerService.sendGitHubEventToEventstracker(eventPayload);
@@ -54,13 +56,15 @@ public class DBCleanupMessageConsumer {
             log.error("Error deserializing message: {}", message, e);
         }
     }
+
     private String createEventPayload(RepositoryPayload payload) {
         String repoRecordID = payload.getRepoRecordId();
-        String status =  "Repository deleted successfully from DB!" ;
+        String status = "Repository deleted successfully from DB!";
         return String.format(
                 "%s{\"repoRecordId\":\"%s\",\"deletedAt\":\"%s\",\"deletedBy\":\"%s\"}",
                 status, repoRecordID, LocalDateTime.now(), payload.getDeletedBy());
     }
+
     private String extractJsonFromPayload(String payload) {
         // Extract the JSON part after "Failed to delete repository" or other prefix
         int jsonStart = payload.indexOf("{");

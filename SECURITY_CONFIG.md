@@ -30,7 +30,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 String hashedPassword = encoder.encode("your_new_password");
-System.out.println("{bcrypt}" + hashedPassword);
+log.error("{bcrypt}" + hashedPassword);
 ```
 
 ## Security Best Practices

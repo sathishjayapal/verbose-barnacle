@@ -65,7 +65,7 @@ management:
   server:
     port: ${MANAGEMENT_PORT:8081}
   jmx:
-    enabled: true
+    enabled: false
 server:
   port: ${PORT:7080}
 
