@@ -21,7 +21,8 @@ export default function RepositoriesList() {
   const [searchParams, ] = useSearchParams();
   const listParams = getListParams();
   const sortOptions = {
-    'id,ASC': t('repositories.list.sort.id,ASC'), 
+    "id,ASC": t('repositories.list.sort.id,ASC'),
+    'id,DESC': t('repositories.list.sort.id,DESC'),
     'repoName,ASC': t('repositories.list.sort.repoName,ASC'), 
     'repoCreatedDate,ASC': t('repositories.list.sort.repoCreatedDate,ASC')
   };

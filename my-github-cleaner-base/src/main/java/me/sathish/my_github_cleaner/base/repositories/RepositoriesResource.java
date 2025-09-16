@@ -33,7 +33,7 @@ public class RepositoriesResource {
     @GetMapping
     public ResponseEntity<Page<RepositoriesDTO>> getAllRepositoriess(
             @RequestParam(name = "filter", required = false) final String filter,
-            @SortDefault(sort = "id") @PageableDefault(size = 20) final Pageable pageable) {
+            @SortDefault(sort = "id") @PageableDefault(size = 50) final Pageable pageable) {
         return ResponseEntity.ok(repositoriesService.findAll(filter, pageable));
     }
 

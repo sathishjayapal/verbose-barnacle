@@ -56,7 +56,7 @@ public class EventTrackerService {
             domainsData = objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
             log.debug("Fetched domains on startup. List length: " + domainsData.size());
         } else {
-            System.out.println("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
+            log.error("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
             throw new RuntimeException("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
         }
     }
@@ -86,12 +86,12 @@ public class EventTrackerService {
             }
 
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
-            System.out.println("Event Payload: " + jsonPayload);
+            log.error("Event Payload: " + jsonPayload);
 
             HttpClient client = HttpClient.newHttpClient();
-            String eventsTrackerUrl = environment.getProperty("eventstracker.url", "http://localhost:9081");
-            String EventServiceUserName = environment.getProperty("eventstracker.username", "system");
-            String EventServicePassword = environment.getProperty("eventstracker.password", "system");
+            String eventsTrackerUrl = environment.getProperty("eventstracker_url");
+            String EventServiceUserName = environment.getProperty("eventstracker_username");
+            String EventServicePassword = environment.getProperty("eventstracker_password");
 
             HttpRequest eventRequest = HttpRequest.newBuilder()
                     .uri(URI.create(eventsTrackerUrl + "/api/domainEvents"))

@@ -5,13 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.github.GitHubService;
 import me.sathish.my_github_cleaner.base.github.GitHubServiceConstants;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import me.sathish.my_github_cleaner.base.repositories.RepositoriesService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,12 +18,12 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 @Service
+@Slf4j
 public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstants {
     private final GitHubService gitHubService;
     private final RepositoriesService repositoriesService;
     private final EventTrackerService eventTrackerService;
     private final Environment environment;
-    Logger logger = LoggerFactory.getLogger(GitHubDataRunner.class);
 
     public GitHubDataRunner(
             GitHubService gitHubService,
@@ -51,7 +50,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                         .collect(Collectors.toSet());
         // Get all repository names from the database
         List<String> dbRepoNamesList = repositoriesService.findAllRepoNames();
-        System.out.println("dbRepoNamesList size: " + dbRepoNamesList.size());
+        log.error("dbRepoNamesList size: " + dbRepoNamesList.size());
         Set<String> dbRepoNames = dbRepoNamesList.stream().collect(Collectors.toSet());
 
         // Find repositories that are on GitHub but not in the database
@@ -59,9 +58,9 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 .filter(repoName -> !githubRepoNames.contains(repoName))
                 .collect(Collectors.toSet());
         if (missingInRepo.isEmpty()) {
-            System.out.println("No missing repositories found. All GitHub repositories are present in the database.");
+            log.error("No missing repositories found. All GitHub repositories are present in the database.");
         } else {
-            System.out.println("The following repositories are on Database but missing in Github:");
+            log.error("The following repositories are on Database but missing in Github:");
             missingInRepo.forEach(System.out::println);
         }
 
@@ -69,10 +68,10 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 .filter(repoName -> !dbRepoNames.contains(repoName))
                 .collect(Collectors.toSet());
         if (missingInDb.isEmpty()) {
-            System.out.println("No missing repositories found. All GitHub repositories are present in the database.");
+            log.error("No missing repositories found. All GitHub repositories are present in the database.");
             return Collections.emptySet();
         } else {
-            System.out.println("The following repositories are on GitHub but missing in the database:");
+            log.error("The following repositories are on GitHub but missing in the database:");
             missingInDb.forEach(System.out::println);
             return missingInDb;
         }
@@ -118,23 +117,19 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                     .collect(Collectors.toList());
 
             if (reposToSave != null && !reposToSave.isEmpty()) {
-                GitHubRepository firstRepo = reposToSave.getFirst(); // Get the first successfully fetched repo
+                GitHubRepository firstRepo = reposToSave.get(0); // Get the first successfully fetched repo
                 saveAndEvent(reposToSave, firstRepo);
             } else {
-                logger.info("No new missing repositories were successfully fetched for saving to DB.");
-                String payLoad = new StringBuffer("No new repositories to DB repository")
-                        .append(String.format(
-                                "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
-                        .toString(); // Added missing argument
+                log.error("No new missing repositories were successfully fetched for saving to DB.");
+                String payLoad = "No new repositories to DB repository"
+                        + String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
                 eventTrackerService.sendGitHubEventToEventstracker(payLoad);
             }
         } else {
             if (repositoriesService.countByRecords()) {
-                System.out.println("Repositories already exist in the database. No new repositories to fetch.");
-                String payLoad = new StringBuffer("No new repositories to DB repository")
-                        .append(String.format(
-                                "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
-                        .toString();
+                log.error("Repositories already exist in the database. No new repositories to fetch.");
+                String payLoad = "No new repositories to DB repository"
+                        + String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
                 eventTrackerService.sendGitHubEventToEventstracker(payLoad);
             } else {
                 List<GitHubRepository> reposToSave =
@@ -143,11 +138,10 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                     GitHubRepository firstRepo = reposToSave.get(0); // Get the first fetched repo
                     saveAndEvent(reposToSave, firstRepo);
                 } else {
-                    logger.info("No user repositories found or fetched for saving to DB.");
-                    String payLoad = new StringBuffer("No new repositories to DB repository")
-                            .append(String.format(
-                                    "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER))
-                            .toString();
+                    log.error("No user repositories found or fetched for saving to DB.");
+                    String payLoad = "No new repositories to DB repository"
+                            + String.format(
+                                    "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
                     eventTrackerService.sendGitHubEventToEventstracker(payLoad);
                 }
             }
@@ -166,11 +160,10 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
         Flux<GitHubRepository> fluxFromList = Flux.fromIterable(reposToSave); // Create new Flux for saving
         saveRepositoriesReactive(fluxFromList).blockLast();
         String repositoryName = firstRepo.getName();
-        String payLoad = new StringBuffer("Saved to DB repository")
-                .append(String.format(
+        String payLoad = "Saved to DB repository"
+                + String.format(
                         "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
-                        repositoryName, LocalDateTime.now(), SYSTEM_USER))
-                .toString();
+                        repositoryName, LocalDateTime.now(), SYSTEM_USER);
         eventTrackerService.sendGitHubEventToEventstracker(payLoad);
     }
 
@@ -189,7 +182,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 .createReactive(gitHubRepository)
                 .onErrorResume(e -> {
                     // Ideally use a logger here, e.g., log.error(...)
-                    logger.error("Error saving repo: " + e.getMessage());
+                    log.error("Error saving repo: " + e.getMessage());
                     return reactor.core.publisher.Mono.empty();
                 }));
     }
