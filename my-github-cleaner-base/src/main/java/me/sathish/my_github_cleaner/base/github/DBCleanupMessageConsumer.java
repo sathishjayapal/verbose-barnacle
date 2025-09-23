@@ -29,7 +29,7 @@ public class DBCleanupMessageConsumer {
     {"id":null,"eventId":"a07968f2-4bbf-42eb-8853-0b09b18ee5e8","eventType":"GITHUB_REPOSITORY_PROJECT","payload":"Failed to delete repository
     {\"Repo Record ID\":\"10007\",\"repositoryName\":\"gjhj\",\"deletedAt\":\"2025-09-14T08:52:25.167003\",\"deletedBy\":\"sathishjayapal\"}","createdBy":"sathishjayapal","updatedBy":"sathishjayapal","domain":10093}
      */
-    @RabbitListener(queues = "${garminrun-event.garmin-newrun-queue}")
+    @RabbitListener(queues = "${sathishprojects.github_operations_queue}")
     @Transactional
     public void consumeMessage(String message) {
         try {
