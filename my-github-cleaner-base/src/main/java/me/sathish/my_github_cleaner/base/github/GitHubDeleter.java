@@ -99,6 +99,7 @@ public class GitHubDeleter implements GitHubServiceConstants {
         }
     }
 
+
     private void handleResponse(
             HttpResponse<String> response, String repositoryName, String username, Long repoRecordID) {
         boolean isSuccess = response.statusCode() == SUCCESS_STATUS_CODE;
@@ -107,9 +108,6 @@ public class GitHubDeleter implements GitHubServiceConstants {
                 "Repository {} {} {} deleted. Status: {}", repoRecordID, repositoryName, status, response.statusCode());
         String eventPayload = createEventPayload(repositoryName, username, isSuccess, repoRecordID);
         eventTrackerService.sendGitHubEventToEventstracker(eventPayload);
-        if (!isSuccess) {
-            log.debug("Response body: {}", response.body());
-        }
     }
 
     private String createEventPayload(String repositoryName, String username, boolean isSuccess, Long repoRecordID) {

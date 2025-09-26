@@ -16,6 +16,9 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import me.sathish.my_github_cleaner.base.config.RabbitMQConfiguration;
+import me.sathish.my_github_cleaner.base.util.RabbitConfigProperties;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -26,12 +29,17 @@ public class EventTrackerService {
 
     private final Environment environment;
     private final ObjectMapper objectMapper;
+    private final RabbitConfigProperties rabbitConfigProperties;
     private List<DomainDTO> domainsData;
-
+    private final RabbitMQConfiguration rabbitMQConfiguration;
+    private final RabbitTemplate rabbitTemplate;
     @Autowired
-    public EventTrackerService(Environment environment, ObjectMapper objectMapper) {
+    public EventTrackerService(Environment environment, ObjectMapper objectMapper, RabbitMQConfiguration rabbitMQConfiguration, RabbitTemplate rabbitTemplate, RabbitConfigProperties rabbitConfigProperties) {
         this.environment = environment;
         this.objectMapper = objectMapper;
+        this.rabbitMQConfiguration = rabbitMQConfiguration;
+        this.rabbitTemplate = rabbitTemplate;
+        this.rabbitConfigProperties = rabbitConfigProperties;
     }
 
     @PostConstruct
@@ -60,7 +68,9 @@ public class EventTrackerService {
             throw new RuntimeException("Failed to fetch domains on startup. Status: " + domainsResponse.statusCode());
         }
     }
+    private void publishDomainEventMessage(final DomainEventDTO domainEventDTO) throws Exception {
 
+    }
     /**
      * Send an event to the Eventstracker service to log the deletion of the GitHub repository.
      *
@@ -88,36 +98,12 @@ public class EventTrackerService {
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
             log.error("Event Payload: " + jsonPayload);
 
-            HttpClient client = HttpClient.newHttpClient();
-            String eventsTrackerUrl = environment.getProperty("eventstracker_url");
-            String EventServiceUserName = environment.getProperty("eventstracker_username");
-            String EventServicePassword = environment.getProperty("eventstracker_password");
-
-            HttpRequest eventRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(eventsTrackerUrl + "/api/domainEvents"))
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .header(
-                            "Authorization",
-                            "Basic "
-                                    + Base64.getEncoder()
-                                            .encodeToString(
-                                                    (EventServiceUserName + ":" + EventServicePassword).getBytes()))
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
-                    .build();
-
-            // Send the request and log the response
-            HttpResponse<String> eventResponse = client.send(eventRequest, HttpResponse.BodyHandlers.ofString());
-
-            if (eventResponse.statusCode() == 201) {
-                log.debug("Event sent to Eventstracker successfully" + eventResponse.body());
-            } else {
-                log.error("Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
-                throw new RuntimeException(
-                        "Failed to send event to Eventstracker. Status: " + eventResponse.statusCode());
-            }
-
-        } catch (IOException | InterruptedException e) {
+                log.error("Exchanging domain event message to RabbitMQ" + rabbitConfigProperties.sathishProjectEventsExchange());
+                for (int i = 0; i < 10; i++) {
+                    rabbitTemplate.convertAndSend(
+                            rabbitConfigProperties.sathishProjectEventsExchange(), rabbitConfigProperties.githubRoutingKey(), eventDTO);
+                }
+        } catch (IOException e) {
             log.error("Error sending event to Eventstracker: " + e.getMessage());
             throw new RuntimeException("Error sending event to Eventstracker: " + e.getMessage());
         }

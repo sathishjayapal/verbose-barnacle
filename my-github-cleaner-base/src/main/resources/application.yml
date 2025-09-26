@@ -79,3 +79,5 @@ decorator:
       custom-appender-class: com.p6spy.engine.spy.appender.MultiLineFormat
 sathishprojects:
   github_operations_queue: x.github.operations
+  sathish_project_events_exchange: x.sathishprojects.events
+  github_routing_key: github.operations.crud
