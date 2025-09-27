@@ -97,11 +97,10 @@ public class EventTrackerService {
 
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
             log.error("Event Payload: " + jsonPayload);
-
                 log.error("Exchanging domain event message to RabbitMQ" + rabbitConfigProperties.sathishProjectEventsExchange());
                 for (int i = 0; i < 10; i++) {
                     rabbitTemplate.convertAndSend(
-                            rabbitConfigProperties.sathishProjectEventsExchange(), rabbitConfigProperties.githubRoutingKey(), eventDTO);
+                            rabbitConfigProperties.sathishProjectEventsExchange(), rabbitConfigProperties.githubRoutingKey(), jsonPayload);
                 }
         } catch (IOException e) {
             log.error("Error sending event to Eventstracker: " + e.getMessage());
