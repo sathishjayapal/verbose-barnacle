@@ -123,6 +123,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 log.error("No new missing repositories were successfully fetched for saving to DB.");
                 String payLoad = "No new repositories to DB repository"
                         + String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
+                log.error("Sending event to Eventstracker: " + payLoad);
                 eventTrackerService.sendGitHubEventToEventstracker(payLoad);
             }
         } else {
