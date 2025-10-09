@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
@@ -24,12 +25,14 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
     private final RepositoriesService repositoriesService;
     private final EventTrackerService eventTrackerService;
     private final Environment environment;
-
+    SathishLoggerClient logger = new SathishLoggerClient("http://localhost:8080", "my-app");
     public GitHubDataRunner(
             GitHubService gitHubService,
             RepositoriesService repositoriesService,
             EventTrackerService eventTrackerService,
             Environment environment) {
+        String correlationId = UUID.randomUUID().toString();
+        logger.info("Processing request", correlationId);
         this.gitHubService = gitHubService;
         this.repositoriesService = repositoriesService;
         this.eventTrackerService = eventTrackerService;
@@ -44,6 +47,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
      */
     @Scheduled(fixedDelay = 86400000L)
     private Set<String> findMissingRepositories() {
+        logger.info("Application started");
         Set<String> githubRepoNames =
                 gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty(GITHUB_USERNAME_KEY)).stream()
                         .map(GitHubRepository::getName)
@@ -58,6 +62,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 .filter(repoName -> !githubRepoNames.contains(repoName))
                 .collect(Collectors.toSet());
         if (missingInRepo.isEmpty()) {
+
             log.error("No missing repositories found. All GitHub repositories are present in the database.");
         } else {
             log.error("The following repositories are on Database but missing in Github:");
