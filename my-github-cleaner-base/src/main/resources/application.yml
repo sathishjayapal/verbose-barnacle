@@ -1,4 +1,3 @@
-
 spring:
   datasource:
     url: ${JDBC_DATABASE_URL}
@@ -21,6 +20,7 @@ spring:
   docker:
     compose:
       lifecycle-management: start-only
+      enabled: false
   cloud:
     kubernetes:
       discovery:
@@ -55,17 +55,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,jmx
-    jmx:
-      exposure:
-        include: '*'
+        include: health
   endpoint:
     health:
       show-details: always
   server:
     port: ${MANAGEMENT_PORT:8081}
-  jmx:
-    enabled: false
 server:
   port: ${PORT:7080}
 
@@ -78,6 +73,8 @@ decorator:
       enable-logging: true
       custom-appender-class: com.p6spy.engine.spy.appender.MultiLineFormat
 sathishprojects:
-  github_operations_queue: sathishprojects.github.operations.queue
+  github_operations_queue: sathishprojects.github.communications.queue
   sathish_project_events_exchange: sathishprojects.exchange
-  github_routing_key: sathishprojects.github.operations
+  github_routing_key: sathishprojects.github.communications
+
+
