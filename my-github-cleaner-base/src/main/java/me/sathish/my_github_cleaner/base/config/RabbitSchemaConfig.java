@@ -14,10 +14,38 @@ public class RabbitSchemaConfig {
      * @return
      */
     @Bean
-    TopicExchange dlxTopicExchange() {
-        return new TopicExchange("sathishprojects.dlx.exchange");
+    FanoutExchange sathishProjectsFanoutExchange() { return new FanoutExchange("x.sathishprojects.fanout");}
+    @Bean
+    TopicExchange sathishProjectsDlxExchange() { return new TopicExchange("x.sathishprojects.dlx.exchange");}
+    @Bean
+    TopicExchange gitHubEventsExchange() {
+        return new TopicExchange("x.sathishprojects.github.events.exchange");
+    }
+    @Bean
+    TopicExchange gitHubEventsDLXExchange() { return new TopicExchange("x.sathishprojects.github.events.dlx.exchange");}
+
+    @Bean
+    Queue getDlqSathishProjectsEventsQueue() {
+        return new Queue("dlq.sathishprojects.events");
+    }
+    @Bean
+    Binding getDlqSathishProjectsEventsBinding(TopicExchange gitHubEventsDLXExchange, Queue getDlqSathishProjectsEventsQueue) {
+        return BindingBuilder
+                .bind(getDlqSathishProjectsEventsQueue)
+                .to(gitHubEventsDLXExchange)
+                .with("#");
+    }
+    @Bean
+    Queue getEventsSathishProjectsQueue() {
+        return new Queue("q.sathishprojects Events");
     }
 
+    @Bean
+    Binding getDlqSathishProjectsEventsBinding(FanoutExchange sathishProjectsFanoutExchange, Queue getEventsSathishProjectsQueue) {
+        return BindingBuilder
+                .bind(getEventsSathishProjectsQueue)
+                .to(sathishProjectsFanoutExchange);
+    }
 
     @Bean
     Queue gitHubDeadLetterQueue() {
@@ -69,24 +97,6 @@ public class RabbitSchemaConfig {
         return BindingBuilder.bind(gitHubCommunicationsQueue).to(topicExchange).with("sathishprojects.github.communications");
     }
 
-//
-//    @Bean
-//    Queue sathishProjectsOperationsQueue() {
-//        Map<String, Object> args = Map.of(
-//                "x-dead-letter-exchange", "sathishprojects.dlq.queue"
-//        );
-//        return new Queue("sathishprojects.operations.queue");
-//    }
-//    @Bean
-//    Queue sathishProjectsDeadLetterQueue() {
-//        return new Queue("sathishprojects.dlq.queue");
-//    }
-//
-//
-//    @Bean
-//    Binding sathishProjectsOperationsBinding(TopicExchange topicExchange, Queue sathishProjectsOperationsQueue) {
-//        return BindingBuilder.bind(sathishProjectsOperationsQueue).to(topicExchange).with("sathishprojects.operations");
-//    }
 
 
 
