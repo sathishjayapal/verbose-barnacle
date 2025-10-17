@@ -18,86 +18,82 @@ public class RabbitSchemaConfig {
     @Bean
     TopicExchange sathishProjectsDlxExchange() { return new TopicExchange("x.sathishprojects.dlx.exchange");}
     @Bean
-    TopicExchange gitHubEventsExchange() {
-        return new TopicExchange("x.sathishprojects.github.events.exchange");
+    Queue getSathishProjectsEventsQueue() {
+        return new Queue("q.sathishprojects.events");
     }
-    @Bean
-    TopicExchange gitHubEventsDLXExchange() { return new TopicExchange("x.sathishprojects.github.events.dlx.exchange");}
 
     @Bean
     Queue getDlqSathishProjectsEventsQueue() {
         return new Queue("dlq.sathishprojects.events");
     }
     @Bean
-    Binding getDlqSathishProjectsEventsBinding(TopicExchange gitHubEventsDLXExchange, Queue getDlqSathishProjectsEventsQueue) {
+    Binding getDlqSathishProjectsEventsBinding() {
         return BindingBuilder
-                .bind(getDlqSathishProjectsEventsQueue)
-                .to(gitHubEventsDLXExchange)
+                .bind(getDlqSathishProjectsEventsQueue())
+                .to(sathishProjectsDlxExchange())
                 .with("#");
     }
     @Bean
-    Queue getEventsSathishProjectsQueue() {
-        return new Queue("q.sathishprojects Events");
-    }
-
-    @Bean
-    Binding getDlqSathishProjectsEventsBinding(FanoutExchange sathishProjectsFanoutExchange, Queue getEventsSathishProjectsQueue) {
+    Binding getSathishProjectsEventsBinding() {
         return BindingBuilder
-                .bind(getEventsSathishProjectsQueue)
-                .to(sathishProjectsFanoutExchange);
+                .bind(getSathishProjectsEventsQueue())
+                .to(sathishProjectsFanoutExchange());
     }
 
     @Bean
-    Queue gitHubDeadLetterQueue() {
-        return new Queue("sathishprojects.github.dlq.queue");
-    }
+    TopicExchange gitHubEventsDLXExchange() { return new TopicExchange("x.sathishprojects.github.events.dlx.exchange");}
+
     @Bean
-    Binding gitHubDeadLetterQueueBinder(TopicExchange dlxTopicExchange, Queue gitHubDeadLetterQueue) {
+    Queue getGitHubAPIEventDLQ() {
+        return new Queue("dlq.sathishprojects.github.api.events");
+    }
+
+    @Bean
+    Binding getGitHubAPIEventsDLXExchange() {
         return BindingBuilder
-                .bind(gitHubDeadLetterQueue)
-                .to(dlxTopicExchange)
-                .with("sathishprojects.github.#"); // Add routing key pattern for all GitHub-related dead letters
+                .bind(getGitHubAPIEventDLQ())
+                .to(gitHubEventsDLXExchange())
+                .with("sathishprojects.github.api.*");
     }
 
     @Bean
-    TopicExchange topicExchange() {
-        return new TopicExchange("sathishprojects.exchange");
-    }
-
-
-    /**
-     * GitHub-related queues.
-     * @return
-     */
-    @Bean
-    Queue gitHubOperatationsQueue() {
-        Map<String, Object> args = Map.of(
-                "x-dead-letter-exchange", "sathishprojects.dlx.exchange"
-        );
-        return new Queue("sathishprojects.github.operations.queue", true, false,
-                true, args);
-    }
-    @Bean
-    Queue gitHubCommunicationsQueue() {
-        Map<String, Object> args = Map.of(
-                "x-dead-letter-exchange", "sathishprojects.dlx.exchange"
-        );
-        return new Queue("sathishprojects.github.communications.queue");
-    }
-
-
-
-    @Bean
-    Binding gitHubOperationsBinding(TopicExchange topicExchange, Queue gitHubOperatationsQueue) {
-        return BindingBuilder.bind(gitHubOperatationsQueue).to(topicExchange).with("sathishprojects.github.operations");
+    Queue getGitHubOPSEventDLQ() {
+        return new Queue("dlq.sathishprojects.github.ops.events");
     }
 
     @Bean
-    Binding gitHubCommunicationsBinding(TopicExchange topicExchange, Queue gitHubCommunicationsQueue) {
-        return BindingBuilder.bind(gitHubCommunicationsQueue).to(topicExchange).with("sathishprojects.github.communications");
+    Binding getGitHubNonAPIEventsDLXExchange() {
+        return BindingBuilder
+                .bind(getGitHubOPSEventDLQ())
+                .to(gitHubEventsDLXExchange())
+                .with("sathishprojects.github.ops.*");
     }
 
+    @Bean
+    TopicExchange gitHubEventsExchange() {
+        return new TopicExchange("x.sathishprojects.github.events.exchange");
+    }
+    @Bean
+    Binding getSathishProjectsGitHubEventsBinding() {
+        return BindingBuilder
+                .bind(gitHubEventsExchange())
+                .to(sathishProjectsFanoutExchange());
+    }
 
+    @Bean
+    Queue getGitHubOPSEventsQueue() {
+        return new Queue("q.sathishprojects.github.ops.events");
+    }
 
+    @Bean
+    Queue getGitHubAPIEventsQueue() {
+        return new Queue("q.sathishprojects.github.api.events");
+    }
+//    @Bean
+//    Binding getGitHubAPIEventQBinder() {
+//        return BindingBuilder
+//                .bind(getGitHubAPIEventsQueue())
+//                .to(gitHubEventsExchange());
+//    }
 
 }
