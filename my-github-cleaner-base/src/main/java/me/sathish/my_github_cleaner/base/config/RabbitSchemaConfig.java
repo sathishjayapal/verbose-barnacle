@@ -19,7 +19,10 @@ public class RabbitSchemaConfig {
     TopicExchange sathishProjectsDlxExchange() { return new TopicExchange("x.sathishprojects.dlx.exchange");}
     @Bean
     Queue getSathishProjectsEventsQueue() {
-        return new Queue("q.sathishprojects.events");
+        return QueueBuilder.durable("q.sathishprojects.events")
+                .withArgument("x-dead-letter-exchange", "x.sathishprojects.dlx.exchange")
+                .withArgument("x-message-ttl", 10000) // 10 seconds TTL
+                .build();
     }
 
     @Bean
@@ -33,6 +36,7 @@ public class RabbitSchemaConfig {
                 .to(sathishProjectsDlxExchange())
                 .with("#");
     }
+
     @Bean
     Binding getSathishProjectsEventsBinding() {
         return BindingBuilder
@@ -82,18 +86,34 @@ public class RabbitSchemaConfig {
 
     @Bean
     Queue getGitHubOPSEventsQueue() {
-        return new Queue("q.sathishprojects.github.ops.events");
+        return QueueBuilder.durable("q.sathishprojects.github.ops.events")
+                .withArgument("x-dead-letter-exchange", "x.sathishprojects.github.events.dlx.exchange")
+                .withArgument("x-message-ttl", 10000) // 10 seconds TTL
+                .withArgument("x-dead-letter-routing-key", "sathishprojects.github.ops.*")
+                .build();
     }
 
     @Bean
     Queue getGitHubAPIEventsQueue() {
-        return new Queue("q.sathishprojects.github.api.events");
+        return QueueBuilder.durable("q.sathishprojects.github.api.events")
+                .withArgument("x-dead-letter-exchange", "x.sathishprojects.github.events.dlx.exchange")
+                .withArgument("x-message-ttl", 10000) // 10 seconds TTL
+                .withArgument("x-dead-letter-routing-key", "sathishprojects.github.api.*")
+                .build();
     }
-//    @Bean
-//    Binding getGitHubAPIEventQBinder() {
-//        return BindingBuilder
-//                .bind(getGitHubAPIEventsQueue())
-//                .to(gitHubEventsExchange());
-//    }
+    @Bean
+    Binding BindSathishProjectsAPIEventsQ() {
+        return BindingBuilder
+                .bind(getGitHubAPIEventsQueue())
+                .to(gitHubEventsExchange())
+                .with("sathishprojects.github.api.*");
+    }
+    @Bean
+    Binding BindSathishProjectsOPSEventsQ() {
+        return BindingBuilder
+                .bind(getGitHubOPSEventsQueue())
+                .to(gitHubEventsExchange())
+                .with("sathishprojects.github.ops.*");
+    }
 
 }
