@@ -1,5 +1,6 @@
 package me.sathish.my_github_cleaner.base.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +9,7 @@ import org.springframework.lang.Nullable;
 import java.util.Map;
 
 @Configuration
+@Slf4j
 public class RabbitSchemaConfig {
     /**
      * Dead letter exchange for all GitHub-related queues.
@@ -27,6 +29,7 @@ public class RabbitSchemaConfig {
 
     @Bean
     Queue getDlqSathishProjectsEventsQueue() {
+        log.error("Creating DLQ Queue: dlq.sathishprojects.events");
         return new Queue("dlq.sathishprojects.events");
     }
     @Bean
