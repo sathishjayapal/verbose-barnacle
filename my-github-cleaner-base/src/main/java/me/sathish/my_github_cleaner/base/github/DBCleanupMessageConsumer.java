@@ -1,14 +1,11 @@
 package me.sathish.my_github_cleaner.base.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.time.LocalDateTime;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.repositories.RepositoriesRepository;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +29,7 @@ public class DBCleanupMessageConsumer {
     {"id":null,"eventId":"a07968f2-4bbf-42eb-8853-0b09b18ee5e8","eventType":"GITHUB_REPOSITORY_PROJECT","payload":"Failed to delete repository
     {\"Repo Record ID\":\"10007\",\"repositoryName\":\"gjhj\",\"deletedAt\":\"2025-09-14T08:52:25.167003\",\"deletedBy\":\"sathishjayapal\"}","createdBy":"sathishjayapal","updatedBy":"sathishjayapal","domain":10093}
      */
-//    @RabbitListener(queues = "${sathishprojects.github_operations_queue}")
+    //    @RabbitListener(queues = "${sathishprojects.github_operations_queue}")
     @Transactional
     public void consumeMessage(String message) {
         try {

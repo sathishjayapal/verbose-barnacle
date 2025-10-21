@@ -4,9 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.lang.Nullable;
-
-import java.util.Map;
 
 @Configuration
 @Slf4j
@@ -16,9 +13,15 @@ public class RabbitSchemaConfig {
      * @return
      */
     @Bean
-    FanoutExchange sathishProjectsFanoutExchange() { return new FanoutExchange("x.sathishprojects.fanout");}
+    FanoutExchange sathishProjectsFanoutExchange() {
+        return new FanoutExchange("x.sathishprojects.fanout");
+    }
+
     @Bean
-    TopicExchange sathishProjectsDlxExchange() { return new TopicExchange("x.sathishprojects.dlx.exchange");}
+    TopicExchange sathishProjectsDlxExchange() {
+        return new TopicExchange("x.sathishprojects.dlx.exchange");
+    }
+
     @Bean
     Queue getSathishProjectsEventsQueue() {
         log.error("Creating Queue: q.sathishprojects.events");
@@ -33,23 +36,23 @@ public class RabbitSchemaConfig {
         log.error("Creating DLQ Queue: dlq.sathishprojects.events");
         return new Queue("dlq.sathishprojects.events");
     }
+
     @Bean
     Binding getDlqSathishProjectsEventsBinding() {
-        return BindingBuilder
-                .bind(getDlqSathishProjectsEventsQueue())
+        return BindingBuilder.bind(getDlqSathishProjectsEventsQueue())
                 .to(sathishProjectsDlxExchange())
                 .with("#");
     }
 
     @Bean
     Binding getSathishProjectsEventsBinding() {
-        return BindingBuilder
-                .bind(getSathishProjectsEventsQueue())
-                .to(sathishProjectsFanoutExchange());
+        return BindingBuilder.bind(getSathishProjectsEventsQueue()).to(sathishProjectsFanoutExchange());
     }
 
     @Bean
-    TopicExchange gitHubEventsDLXExchange() { return new TopicExchange("x.sathishprojects.github.events.dlx.exchange");}
+    TopicExchange gitHubEventsDLXExchange() {
+        return new TopicExchange("x.sathishprojects.github.events.dlx.exchange");
+    }
 
     @Bean
     Queue getGitHubAPIEventDLQ() {
@@ -58,8 +61,7 @@ public class RabbitSchemaConfig {
 
     @Bean
     Binding getGitHubAPIEventsDLXExchange() {
-        return BindingBuilder
-                .bind(getGitHubAPIEventDLQ())
+        return BindingBuilder.bind(getGitHubAPIEventDLQ())
                 .to(gitHubEventsDLXExchange())
                 .with("sathishprojects.github.api.*");
     }
@@ -71,8 +73,7 @@ public class RabbitSchemaConfig {
 
     @Bean
     Binding getGitHubNonAPIEventsDLXExchange() {
-        return BindingBuilder
-                .bind(getGitHubOPSEventDLQ())
+        return BindingBuilder.bind(getGitHubOPSEventDLQ())
                 .to(gitHubEventsDLXExchange())
                 .with("sathishprojects.github.ops.*");
     }
@@ -81,11 +82,10 @@ public class RabbitSchemaConfig {
     TopicExchange gitHubEventsExchange() {
         return new TopicExchange("x.sathishprojects.github.events.exchange");
     }
+
     @Bean
     Binding getSathishProjectsGitHubEventsBinding() {
-        return BindingBuilder
-                .bind(gitHubEventsExchange())
-                .to(sathishProjectsFanoutExchange());
+        return BindingBuilder.bind(gitHubEventsExchange()).to(sathishProjectsFanoutExchange());
     }
 
     @Bean
@@ -105,19 +105,18 @@ public class RabbitSchemaConfig {
                 .withArgument("x-dead-letter-routing-key", "sathishprojects.github.api.*")
                 .build();
     }
+
     @Bean
     Binding BindSathishProjectsAPIEventsQ() {
-        return BindingBuilder
-                .bind(getGitHubAPIEventsQueue())
+        return BindingBuilder.bind(getGitHubAPIEventsQueue())
                 .to(gitHubEventsExchange())
                 .with("sathishprojects.github.api.*");
     }
+
     @Bean
     Binding BindSathishProjectsOPSEventsQ() {
-        return BindingBuilder
-                .bind(getGitHubOPSEventsQueue())
+        return BindingBuilder.bind(getGitHubOPSEventsQueue())
                 .to(gitHubEventsExchange())
                 .with("sathishprojects.github.ops.*");
     }
-
 }
