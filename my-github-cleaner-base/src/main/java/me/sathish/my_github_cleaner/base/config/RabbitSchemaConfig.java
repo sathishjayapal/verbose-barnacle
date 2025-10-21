@@ -21,6 +21,7 @@ public class RabbitSchemaConfig {
     TopicExchange sathishProjectsDlxExchange() { return new TopicExchange("x.sathishprojects.dlx.exchange");}
     @Bean
     Queue getSathishProjectsEventsQueue() {
+        log.error("Creating Queue: q.sathishprojects.events");
         return QueueBuilder.durable("q.sathishprojects.events")
                 .withArgument("x-dead-letter-exchange", "x.sathishprojects.dlx.exchange")
                 .withArgument("x-message-ttl", 10000) // 10 seconds TTL
