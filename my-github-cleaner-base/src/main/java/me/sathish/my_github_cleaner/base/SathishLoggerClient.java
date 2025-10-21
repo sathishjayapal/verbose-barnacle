@@ -2,9 +2,6 @@ package me.sathish.my_github_cleaner.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Service;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -31,9 +28,8 @@ public class SathishLoggerClient {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.applicationName = applicationName;
         this.apiKey = apiKey;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
+        this.httpClient =
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
     }
@@ -91,7 +87,8 @@ public class SathishLoggerClient {
         } catch (Exception e) {
             // Fallback to console logging if remote logging fails
             System.err.println("Failed to send log to SathishLogger: " + e.getMessage());
-            System.out.println(String.format("[%s] [%s] [%s] %s",
+            System.out.println(String.format(
+                    "[%s] [%s] [%s] %s",
                     applicationName, correlationId != null ? correlationId : "N/A", level, message));
         }
     }
@@ -104,7 +101,11 @@ public class SathishLoggerClient {
                 logRequest.put("applicationName", applicationName);
                 logRequest.put("logLevel", level.name());
                 logRequest.put("message", message);
-                logRequest.put("correlationId", correlationId != null ? correlationId : UUID.randomUUID().toString());
+                logRequest.put(
+                        "correlationId",
+                        correlationId != null
+                                ? correlationId
+                                : UUID.randomUUID().toString());
                 logRequest.put("timestamp", LocalDateTime.now());
                 logRequest.put("threadName", Thread.currentThread().getName());
 
@@ -136,7 +137,8 @@ public class SathishLoggerClient {
             } catch (Exception e) {
                 // Fallback to console logging
                 System.err.println("Failed to send log to SathishLogger: " + e.getMessage());
-                System.out.println(String.format("[%s] [%s] [%s] %s",
+                System.out.println(String.format(
+                        "[%s] [%s] [%s] %s",
                         applicationName, correlationId != null ? correlationId : "N/A", level, message));
             }
         });
@@ -144,7 +146,10 @@ public class SathishLoggerClient {
 
     private String getStackTrace(Throwable throwable) {
         StringBuilder sb = new StringBuilder();
-        sb.append(throwable.getClass().getName()).append(": ").append(throwable.getMessage()).append("\n");
+        sb.append(throwable.getClass().getName())
+                .append(": ")
+                .append(throwable.getMessage())
+                .append("\n");
         for (StackTraceElement element : throwable.getStackTrace()) {
             sb.append("\tat ").append(element.toString()).append("\n");
         }
@@ -152,6 +157,11 @@ public class SathishLoggerClient {
     }
 
     public enum LogLevel {
-        TRACE, DEBUG, INFO, WARN, ERROR, FATAL
+        TRACE,
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL
     }
 }

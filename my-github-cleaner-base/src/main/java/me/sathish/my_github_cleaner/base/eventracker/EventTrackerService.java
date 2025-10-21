@@ -33,8 +33,14 @@ public class EventTrackerService {
     private List<DomainDTO> domainsData;
     private final RabbitMQConfiguration rabbitMQConfiguration;
     private final RabbitTemplate rabbitTemplate;
+
     @Autowired
-    public EventTrackerService(Environment environment, ObjectMapper objectMapper, RabbitMQConfiguration rabbitMQConfiguration, RabbitTemplate rabbitTemplate, RabbitConfigProperties rabbitConfigProperties) {
+    public EventTrackerService(
+            Environment environment,
+            ObjectMapper objectMapper,
+            RabbitMQConfiguration rabbitMQConfiguration,
+            RabbitTemplate rabbitTemplate,
+            RabbitConfigProperties rabbitConfigProperties) {
         this.environment = environment;
         this.objectMapper = objectMapper;
         this.rabbitMQConfiguration = rabbitMQConfiguration;
@@ -49,12 +55,12 @@ public class EventTrackerService {
             String eventsTrackerUrl = environment.getProperty("eventstracker_url", "http://localhost:9081");
             String EventServiceUserName = environment.getProperty("eventstracker_username", "system");
             String EventServicePassword = environment.getProperty("eventstracker_password", "system");
-            
+
             // Validate required configuration
             if (eventsTrackerUrl == null || eventsTrackerUrl.trim().isEmpty()) {
                 throw new IllegalStateException("EventTracker URL is not configured");
             }
-            
+
             HttpRequest getDomainsRequest = HttpRequest.newBuilder()
                     .uri(URI.create(eventsTrackerUrl + "/api/domains"))
                     .header("Content-Type", "application/json")
@@ -63,18 +69,20 @@ public class EventTrackerService {
                             "Authorization",
                             "Basic "
                                     + Base64.getEncoder()
-                                            .encodeToString((EventServiceUserName + ":" + EventServicePassword).getBytes()))
+                                            .encodeToString(
+                                                    (EventServiceUserName + ":" + EventServicePassword).getBytes()))
                     .GET()
                     .build();
-                    
+
             HttpResponse<String> domainsResponse = client.send(getDomainsRequest, HttpResponse.BodyHandlers.ofString());
-            
+
             if (domainsResponse.statusCode() == 200) {
                 domainsData = objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
                 log.info("Successfully fetched {} domains on startup", domainsData.size());
             } else {
-                String errorMsg = String.format("Failed to fetch domains. HTTP Status: %d, Response: %s", 
-                    domainsResponse.statusCode(), domainsResponse.body());
+                String errorMsg = String.format(
+                        "Failed to fetch domains. HTTP Status: %d, Response: %s",
+                        domainsResponse.statusCode(), domainsResponse.body());
                 log.error(errorMsg);
                 throw new EventTrackerException(errorMsg);
             }
@@ -93,9 +101,9 @@ public class EventTrackerService {
             throw new EventTrackerException(errorMsg, e);
         }
     }
-    private void publishDomainEventMessage(final DomainEventDTO domainEventDTO) throws Exception {
 
-    }
+    private void publishDomainEventMessage(final DomainEventDTO domainEventDTO) throws Exception {}
+
     /**
      * Send an event to the Eventstracker service to log the deletion of the GitHub repository.
      *
@@ -108,25 +116,25 @@ public class EventTrackerService {
         if (payLoad == null || payLoad.trim().isEmpty()) {
             throw new IllegalArgumentException("Payload cannot be null or empty");
         }
-        
+
         // Check if domains data is available
         if (domainsData == null || domainsData.isEmpty()) {
             String errorMsg = "Domains data is not available. Service may not be properly initialized.";
             log.error(errorMsg);
             throw new EventTrackerException(errorMsg);
         }
-        
+
         try {
             DomainEventDTO eventDTO = createEventDTO(payLoad);
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
-            
+
             log.info("Sending GitHub event to EventTracker. Event ID: {}", eventDTO.getEventId());
             log.debug("Event Payload: {}", jsonPayload);
-            
+
             sendToRabbitMQ(jsonPayload);
-            
+
             log.info("Successfully sent GitHub event to EventTracker. Event ID: {}", eventDTO.getEventId());
-            
+
         } catch (IOException e) {
             String errorMsg = "Failed to serialize event payload: " + e.getMessage();
             log.error(errorMsg, e);
@@ -137,7 +145,7 @@ public class EventTrackerService {
             throw new EventTrackerException(errorMsg, e);
         }
     }
-    
+
     /**
      * Creates a DomainEventDTO from the given payload.
      */
@@ -152,19 +160,19 @@ public class EventTrackerService {
         Optional<DomainDTO> domainOpt = domainsData.stream()
                 .filter(d -> "GITHUB_REPO".equals(d.getDomainName()))
                 .findFirst();
-                
+
         if (domainOpt.isPresent()) {
             eventDTO.setDomain(domainOpt.get().getId());
         } else {
-            String errorMsg = "Domain 'GITHUB_REPO' not found in available domains. Available domains: " + 
-                domainsData.stream().map(DomainDTO::getDomainName).toList();
+            String errorMsg = "Domain 'GITHUB_REPO' not found in available domains. Available domains: "
+                    + domainsData.stream().map(DomainDTO::getDomainName).toList();
             log.error(errorMsg);
             throw new EventTrackerException(errorMsg);
         }
-        
+
         return eventDTO;
     }
-    
+
     /**
      * Sends the JSON payload to RabbitMQ with proper error handling.
      */
@@ -172,23 +180,24 @@ public class EventTrackerService {
         try {
             String exchange = rabbitConfigProperties.sathishProjectEventsExchange();
             String routingKey = rabbitConfigProperties.githubRoutingKey();
-            
+
             if (exchange == null || exchange.trim().isEmpty()) {
                 throw new EventTrackerException("RabbitMQ exchange is not configured");
             }
             if (routingKey == null || routingKey.trim().isEmpty()) {
                 throw new EventTrackerException("RabbitMQ routing key is not configured");
             }
-            
+
             log.debug("Sending message to RabbitMQ exchange: {}, routing key: {}", exchange, routingKey);
-            
+
             // Send multiple messages as per original logic, but with better error handling
             for (int i = 0; i < 10; i++) {
                 try {
                     rabbitTemplate.convertAndSend(exchange, routingKey, jsonPayload);
                     log.debug("Successfully sent message {} of 10 to RabbitMQ", i + 1);
                 } catch (Exception e) {
-                    String errorMsg = String.format("Failed to send message %d of 10 to RabbitMQ: %s", i + 1, e.getMessage());
+                    String errorMsg =
+                            String.format("Failed to send message %d of 10 to RabbitMQ: %s", i + 1, e.getMessage());
                     log.error(errorMsg, e);
                     // Continue with other messages, but log the failure
                 }

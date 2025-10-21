@@ -99,7 +99,6 @@ public class GitHubDeleter implements GitHubServiceConstants {
         }
     }
 
-
     private void handleResponse(
             HttpResponse<String> response, String repositoryName, String username, Long repoRecordID) {
         boolean isSuccess = response.statusCode() == SUCCESS_STATUS_CODE;

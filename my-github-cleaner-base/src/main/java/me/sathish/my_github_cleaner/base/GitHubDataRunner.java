@@ -26,6 +26,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
     private final EventTrackerService eventTrackerService;
     private final Environment environment;
     SathishLoggerClient logger = new SathishLoggerClient("http://localhost:8080", "my-app");
+
     public GitHubDataRunner(
             GitHubService gitHubService,
             RepositoriesService repositoriesService,
