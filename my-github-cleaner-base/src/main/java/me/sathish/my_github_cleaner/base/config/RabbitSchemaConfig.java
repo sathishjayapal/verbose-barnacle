@@ -8,116 +8,79 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Slf4j
 public class RabbitSchemaConfig {
-    /**
-     * Dead letter exchange for all GitHub-related queues.
-     * @return
-     */
-    @Bean
-    FanoutExchange sathishProjectsFanoutExchange() {
-        return new FanoutExchange("x.sathishprojects.fanout");
-    }
+    // Exchange names
+    public static final String FANOUT_EXCHANGE = "x.sathishprojects.fanout";
+    public static final String DLX_EXCHANGE = "x.sathishprojects.dlx.exchange";
+    public static final String GITHUB_EVENTS_EXCHANGE = "x.sathishprojects.github.events.exchange";
+    public static final String GITHUB_EVENTS_DLX_EXCHANGE = "x.sathishprojects.github.events.dlx.exchange";
+
+    // Queue names
+    public static final String SAT_PROJECTS_EVENTS_QUEUE = "q.sathishprojects.events";
+    public static final String DLQ_SAT_PROJECTS_EVENTS_QUEUE = "dlq.sathishprojects.events";
+    public static final String GITHUB_API_EVENTS_QUEUE = "q.sathishprojects.github.api.events";
+    public static final String GITHUB_OPS_EVENTS_QUEUE = "q.sathishprojects.github.ops.events";
+    public static final String DLQ_GITHUB_API_EVENTS_QUEUE = "dlq.sathishprojects.github.api.events";
+    public static final String DLQ_GITHUB_OPS_EVENTS_QUEUE = "dlq.sathishprojects.github.ops.events";
+
+    // Routing keys
+    public static final String GITHUB_API_ROUTING_KEY = "sathishprojects.github.api.*";
+    public static final String GITHUB_OPS_ROUTING_KEY = "sathishprojects.github.ops.*";
+    public static final int MESSAGE_TTL_MS = 10000; // 10 seconds
 
     @Bean
-    TopicExchange sathishProjectsDlxExchange() {
-        log.error("Creating DLX Exchange: x.sathishprojects.dlx.exchange");
-        return new TopicExchange("x.sathishprojects.dlx.exchange");
-    }
+    public Declarables declarables() {
+        // Exchanges
+        FanoutExchange fanoutExchange = new FanoutExchange(FANOUT_EXCHANGE);
+        TopicExchange dlxExchange = new TopicExchange(DLX_EXCHANGE);
+        TopicExchange gitHubEventsExchange = new TopicExchange(GITHUB_EVENTS_EXCHANGE);
+        TopicExchange gitHubEventsDlxExchange = new TopicExchange(GITHUB_EVENTS_DLX_EXCHANGE);
 
-    @Bean
-    Queue getSathishProjectsEventsQueue() {
-        log.error("Creating Queue: q.sathishprojects.events");
-        return QueueBuilder.durable("q.sathishprojects.events")
-                .withArgument("x-dead-letter-exchange", "x.sathishprojects.dlx.exchange")
-                .withArgument("x-message-ttl", 10000) // 10 seconds TTL
+        // Queues
+        Queue satProjectsEventsQueue = QueueBuilder.durable(SAT_PROJECTS_EVENTS_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-message-ttl", MESSAGE_TTL_MS)
                 .build();
-    }
 
-    @Bean
-    Queue getDlqSathishProjectsEventsQueue() {
-        log.error("Creating DLQ Queue: dlq.sathishprojects.events");
-        return new Queue("dlq.sathishprojects.events");
-    }
+        Queue dlqSatProjectsEventsQueue = QueueBuilder.durable(DLQ_SAT_PROJECTS_EVENTS_QUEUE).build();
+        Queue dlqGitHubApiEventsQueue = QueueBuilder.durable(DLQ_GITHUB_API_EVENTS_QUEUE).build();
+        Queue dlqGitHubOpsEventsQueue = QueueBuilder.durable(DLQ_GITHUB_OPS_EVENTS_QUEUE).build();
 
-    @Bean
-    Binding getDlqSathishProjectsEventsBinding() {
-        return BindingBuilder.bind(getDlqSathishProjectsEventsQueue())
-                .to(sathishProjectsDlxExchange())
-                .with("#");
-    }
-
-    @Bean
-    Binding getSathishProjectsEventsBinding() {
-        return BindingBuilder.bind(getSathishProjectsEventsQueue()).to(sathishProjectsFanoutExchange());
-    }
-
-    @Bean
-    TopicExchange gitHubEventsDLXExchange() {
-        return new TopicExchange("x.sathishprojects.github.events.dlx.exchange");
-    }
-
-    @Bean
-    Queue getGitHubAPIEventDLQ() {
-        return new Queue("dlq.sathishprojects.github.api.events");
-    }
-
-    @Bean
-    Binding getGitHubAPIEventsDLXExchange() {
-        return BindingBuilder.bind(getGitHubAPIEventDLQ())
-                .to(gitHubEventsDLXExchange())
-                .with("sathishprojects.github.api.*");
-    }
-
-    @Bean
-    Queue getGitHubOPSEventDLQ() {
-        return new Queue("dlq.sathishprojects.github.ops.events");
-    }
-
-    @Bean
-    Binding getGitHubNonAPIEventsDLXExchange() {
-        return BindingBuilder.bind(getGitHubOPSEventDLQ())
-                .to(gitHubEventsDLXExchange())
-                .with("sathishprojects.github.ops.*");
-    }
-
-    @Bean
-    TopicExchange gitHubEventsExchange() {
-        return new TopicExchange("x.sathishprojects.github.events.exchange");
-    }
-
-    @Bean
-    Binding getSathishProjectsGitHubEventsBinding() {
-        return BindingBuilder.bind(gitHubEventsExchange()).to(sathishProjectsFanoutExchange());
-    }
-
-    @Bean
-    Queue getGitHubOPSEventsQueue() {
-        return QueueBuilder.durable("q.sathishprojects.github.ops.events")
-                .withArgument("x-dead-letter-exchange", "x.sathishprojects.github.events.dlx.exchange")
-                .withArgument("x-message-ttl", 10000) // 10 seconds TTL
-                .withArgument("x-dead-letter-routing-key", "sathishprojects.github.ops.*")
+        Queue gitHubApiEventsQueue = QueueBuilder.durable(GITHUB_API_EVENTS_QUEUE)
+                .withArgument("x-dead-letter-exchange", GITHUB_EVENTS_DLX_EXCHANGE)
+                .withArgument("x-message-ttl", MESSAGE_TTL_MS)
+                .withArgument("x-dead-letter-routing-key", GITHUB_API_ROUTING_KEY)
                 .build();
-    }
 
-    @Bean
-    Queue getGitHubAPIEventsQueue() {
-        return QueueBuilder.durable("q.sathishprojects.github.api.events")
-                .withArgument("x-dead-letter-exchange", "x.sathishprojects.github.events.dlx.exchange")
-                .withArgument("x-message-ttl", 10000) // 10 seconds TTL
-                .withArgument("x-dead-letter-routing-key", "sathishprojects.github.api.*")
+        Queue gitHubOpsEventsQueue = QueueBuilder.durable(GITHUB_OPS_EVENTS_QUEUE)
+                .withArgument("x-dead-letter-exchange", GITHUB_EVENTS_DLX_EXCHANGE)
+                .withArgument("x-message-ttl", MESSAGE_TTL_MS)
+                .withArgument("x-dead-letter-routing-key", GITHUB_OPS_ROUTING_KEY)
                 .build();
-    }
 
-    @Bean
-    Binding BindSathishProjectsAPIEventsQ() {
-        return BindingBuilder.bind(getGitHubAPIEventsQueue())
-                .to(gitHubEventsExchange())
-                .with("sathishprojects.github.api.*");
-    }
+        // Bindings
+        return new Declarables(
+                // Exchanges
+                fanoutExchange,
+                dlxExchange,
+                gitHubEventsExchange,
+                gitHubEventsDlxExchange,
 
-    @Bean
-    Binding BindSathishProjectsOPSEventsQ() {
-        return BindingBuilder.bind(getGitHubOPSEventsQueue())
-                .to(gitHubEventsExchange())
-                .with("sathishprojects.github.ops.*");
+                // Queues
+                satProjectsEventsQueue,
+                dlqSatProjectsEventsQueue,
+                gitHubApiEventsQueue,
+                gitHubOpsEventsQueue,
+                dlqGitHubApiEventsQueue,
+                dlqGitHubOpsEventsQueue,
+
+                // Bindings
+                BindingBuilder.bind(satProjectsEventsQueue).to(fanoutExchange),
+                BindingBuilder.bind(dlqSatProjectsEventsQueue).to(dlxExchange).with("#"),
+                BindingBuilder.bind(gitHubApiEventsQueue).to(gitHubEventsExchange).with(GITHUB_API_ROUTING_KEY),
+                BindingBuilder.bind(gitHubOpsEventsQueue).to(gitHubEventsExchange).with(GITHUB_OPS_ROUTING_KEY),
+                BindingBuilder.bind(dlqGitHubApiEventsQueue).to(gitHubEventsDlxExchange).with(GITHUB_API_ROUTING_KEY),
+                BindingBuilder.bind(dlqGitHubOpsEventsQueue).to(gitHubEventsDlxExchange).with(GITHUB_OPS_ROUTING_KEY),
+                BindingBuilder.bind(gitHubEventsExchange).to(fanoutExchange)
+        );
     }
 }
