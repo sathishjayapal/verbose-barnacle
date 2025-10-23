@@ -19,6 +19,7 @@ public class RabbitSchemaConfig {
 
     @Bean
     TopicExchange sathishProjectsDlxExchange() {
+        log.error("Creating DLX Exchange: x.sathishprojects.dlx.exchange");
         return new TopicExchange("x.sathishprojects.dlx.exchange");
     }
 
