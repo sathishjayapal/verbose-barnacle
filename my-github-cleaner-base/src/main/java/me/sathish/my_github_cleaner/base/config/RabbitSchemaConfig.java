@@ -30,31 +30,32 @@ public class RabbitSchemaConfig {
     @Bean
     public Declarables declarables() {
         // Exchanges
-        FanoutExchange fanoutExchange = new FanoutExchange(FANOUT_EXCHANGE);
-        TopicExchange dlxExchange = new TopicExchange(DLX_EXCHANGE);
-        TopicExchange gitHubEventsExchange = new TopicExchange(GITHUB_EVENTS_EXCHANGE);
-        TopicExchange gitHubEventsDlxExchange = new TopicExchange(GITHUB_EVENTS_DLX_EXCHANGE);
+        FanoutExchange fanoutExchange = new FanoutExchange("${fanout_exchange}");
+        TopicExchange dlxExchange = new TopicExchange("${dlx_exchange}");
+        TopicExchange gitHubEventsExchange = new TopicExchange("${github_events_exchange}");
+        TopicExchange gitHubEventsDlxExchange = new TopicExchange("${github_events_dlx_exchange}");
 
         // Queues
-        Queue satProjectsEventsQueue = QueueBuilder.durable(SAT_PROJECTS_EVENTS_QUEUE)
-                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
-                .withArgument("x-message-ttl", MESSAGE_TTL_MS)
+        Queue satProjectsEventsQueue = QueueBuilder.durable("${sat_projects_events_queue}")
+                .withArgument("x-dead-letter-exchange", "${dlx_exchange}")
+                .withArgument("x-message-ttl", "${message_ttl_ms}")
                 .build();
 
-        Queue dlqSatProjectsEventsQueue = QueueBuilder.durable(DLQ_SAT_PROJECTS_EVENTS_QUEUE).build();
-        Queue dlqGitHubApiEventsQueue = QueueBuilder.durable(DLQ_GITHUB_API_EVENTS_QUEUE).build();
-        Queue dlqGitHubOpsEventsQueue = QueueBuilder.durable(DLQ_GITHUB_OPS_EVENTS_QUEUE).build();
 
-        Queue gitHubApiEventsQueue = QueueBuilder.durable(GITHUB_API_EVENTS_QUEUE)
-                .withArgument("x-dead-letter-exchange", GITHUB_EVENTS_DLX_EXCHANGE)
-                .withArgument("x-message-ttl", MESSAGE_TTL_MS)
-                .withArgument("x-dead-letter-routing-key", GITHUB_API_ROUTING_KEY)
+        Queue dlqSatProjectsEventsQueue = QueueBuilder.durable("${dlq_sat_projects_events_queue}").build();
+        Queue dlqGitHubApiEventsQueue = QueueBuilder.durable("${dlq_github_api_events_queue}").build();
+        Queue dlqGitHubOpsEventsQueue = QueueBuilder.durable("${dlq_github_ops_events_queue}").build();
+
+        Queue gitHubApiEventsQueue = QueueBuilder.durable("${github_api_events_queue}")
+                .withArgument("x-dead-letter-exchange", "${github_events_dlx_exchange}")
+                .withArgument("x-message-ttl", "${message_ttl_ms}")
+                .withArgument("x-dead-letter-routing-key", "${github_api_routing_key}")
                 .build();
 
-        Queue gitHubOpsEventsQueue = QueueBuilder.durable(GITHUB_OPS_EVENTS_QUEUE)
-                .withArgument("x-dead-letter-exchange", GITHUB_EVENTS_DLX_EXCHANGE)
-                .withArgument("x-message-ttl", MESSAGE_TTL_MS)
-                .withArgument("x-dead-letter-routing-key", GITHUB_OPS_ROUTING_KEY)
+        Queue gitHubOpsEventsQueue = QueueBuilder.durable("${github_ops_events_queue}")
+                .withArgument("x-dead-letter-exchange", "${github_events_dlx_exchange}")
+                .withArgument("x-message-ttl", "${message_ttl_ms}")
+                .withArgument("x-dead-letter-routing-key", "${github_ops_routing_key}")
                 .build();
 
         // Bindings
@@ -76,10 +77,10 @@ public class RabbitSchemaConfig {
                 // Bindings
                 BindingBuilder.bind(satProjectsEventsQueue).to(fanoutExchange),
                 BindingBuilder.bind(dlqSatProjectsEventsQueue).to(dlxExchange).with("#"),
-                BindingBuilder.bind(gitHubApiEventsQueue).to(gitHubEventsExchange).with(GITHUB_API_ROUTING_KEY),
-                BindingBuilder.bind(gitHubOpsEventsQueue).to(gitHubEventsExchange).with(GITHUB_OPS_ROUTING_KEY),
-                BindingBuilder.bind(dlqGitHubApiEventsQueue).to(gitHubEventsDlxExchange).with(GITHUB_API_ROUTING_KEY),
-                BindingBuilder.bind(dlqGitHubOpsEventsQueue).to(gitHubEventsDlxExchange).with(GITHUB_OPS_ROUTING_KEY),
+                BindingBuilder.bind(gitHubApiEventsQueue).to(gitHubEventsExchange).with("${github_api_routing_key}"),
+                BindingBuilder.bind(gitHubOpsEventsQueue).to(gitHubEventsExchange).with("${github_ops_routing_key}"),
+                BindingBuilder.bind(dlqGitHubApiEventsQueue).to(gitHubEventsDlxExchange).with("${github_api_routing_key}"),
+                BindingBuilder.bind(dlqGitHubOpsEventsQueue).to(gitHubEventsDlxExchange).with("${github_ops_routing_key}"),
                 BindingBuilder.bind(gitHubEventsExchange).to(fanoutExchange)
         );
     }
