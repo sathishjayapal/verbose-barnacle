@@ -1,4 +1,6 @@
+
 spring:
+
   datasource:
     url: ${JDBC_DATABASE_URL}
     username: ${JDBC_DATABASE_USERNAME}
@@ -22,12 +24,18 @@ spring:
       lifecycle-management: start-only
       enabled: false
   cloud:
+    config:
+      username: ${configserverUsername}
+      password: ${configserverPassword}
     kubernetes:
       discovery:
         all-namespaces: true
   config:
-    import:
-      - application-prod.yml
+    username: ${configserverUsername}
+    password: ${configserverPassword}
+    uri: ${configuri}
+    fail-fast: true
+    import: "optional:configserver:http://${configuri}/?fail-fast=true&max-attempts=10&max-interval=1500&multiplier=1.2&initial-interval=1000"
 
 logging:
   pattern:
