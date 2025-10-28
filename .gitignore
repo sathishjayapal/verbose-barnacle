@@ -9,6 +9,8 @@ application-local.yml
 node/
 node_modules/
 coverage/
+logs/
+applogs/
 .env
 .env.local
 .env.development.local
