@@ -41,10 +41,12 @@ public class RabbitSchemaConfig {
                 .withArgument("x-message-ttl", "${message_ttl_ms}")
                 .build();
 
-
-        Queue dlqSatProjectsEventsQueue = QueueBuilder.durable("${dlq_sat_projects_events_queue}").build();
-        Queue dlqGitHubApiEventsQueue = QueueBuilder.durable("${dlq_github_api_events_queue}").build();
-        Queue dlqGitHubOpsEventsQueue = QueueBuilder.durable("${dlq_github_ops_events_queue}").build();
+        Queue dlqSatProjectsEventsQueue =
+                QueueBuilder.durable("${dlq_sat_projects_events_queue}").build();
+        Queue dlqGitHubApiEventsQueue =
+                QueueBuilder.durable("${dlq_github_api_events_queue}").build();
+        Queue dlqGitHubOpsEventsQueue =
+                QueueBuilder.durable("${dlq_github_ops_events_queue}").build();
 
         Queue gitHubApiEventsQueue = QueueBuilder.durable("${github_api_events_queue}")
                 .withArgument("x-dead-letter-exchange", "${github_events_dlx_exchange}")
@@ -77,11 +79,18 @@ public class RabbitSchemaConfig {
                 // Bindings
                 BindingBuilder.bind(satProjectsEventsQueue).to(fanoutExchange),
                 BindingBuilder.bind(dlqSatProjectsEventsQueue).to(dlxExchange).with("#"),
-                BindingBuilder.bind(gitHubApiEventsQueue).to(gitHubEventsExchange).with("${github_api_routing_key}"),
-                BindingBuilder.bind(gitHubOpsEventsQueue).to(gitHubEventsExchange).with("${github_ops_routing_key}"),
-                BindingBuilder.bind(dlqGitHubApiEventsQueue).to(gitHubEventsDlxExchange).with("${github_api_routing_key}"),
-                BindingBuilder.bind(dlqGitHubOpsEventsQueue).to(gitHubEventsDlxExchange).with("${github_ops_routing_key}"),
-                BindingBuilder.bind(gitHubEventsExchange).to(fanoutExchange)
-        );
+                BindingBuilder.bind(gitHubApiEventsQueue)
+                        .to(gitHubEventsExchange)
+                        .with("${github_api_routing_key}"),
+                BindingBuilder.bind(gitHubOpsEventsQueue)
+                        .to(gitHubEventsExchange)
+                        .with("${github_ops_routing_key}"),
+                BindingBuilder.bind(dlqGitHubApiEventsQueue)
+                        .to(gitHubEventsDlxExchange)
+                        .with("${github_api_routing_key}"),
+                BindingBuilder.bind(dlqGitHubOpsEventsQueue)
+                        .to(gitHubEventsDlxExchange)
+                        .with("${github_ops_routing_key}"),
+                BindingBuilder.bind(gitHubEventsExchange).to(fanoutExchange));
     }
 }
