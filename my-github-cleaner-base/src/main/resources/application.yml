@@ -83,6 +83,6 @@ decorator:
 sathishprojects:
   github_operations_queue: q.sathishprojects.github.api.events
   sathish_project_events_exchange: x.sathishprojects.fanout
-  github_routing_key: sathishprojects.github.api.*
+  github_routing_key: sathishprojects.github.api.event
 
 
