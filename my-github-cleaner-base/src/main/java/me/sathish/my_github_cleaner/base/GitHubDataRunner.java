@@ -1,11 +1,5 @@
 package me.sathish.my_github_cleaner.base;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.github.GitHubService;
@@ -17,6 +11,13 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -55,7 +56,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                         .collect(Collectors.toSet());
         // Get all repository names from the database
         List<String> dbRepoNamesList = repositoriesService.findAllRepoNames();
-        log.error("dbRepoNamesList size: " + dbRepoNamesList.size());
+        log.debug("dbRepoNamesList size: {}", dbRepoNamesList.size());
         Set<String> dbRepoNames = dbRepoNamesList.stream().collect(Collectors.toSet());
 
         // Find repositories that are on GitHub but not in the database
@@ -63,22 +64,21 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 .filter(repoName -> !githubRepoNames.contains(repoName))
                 .collect(Collectors.toSet());
         if (missingInRepo.isEmpty()) {
-
-            log.error("No missing repositories found. All GitHub repositories are present in the database.");
+            log.info("No missing repositories found. All GitHub repositories are present in the database.");
         } else {
-            log.error("The following repositories are on Database but missing in Github:");
-            missingInRepo.forEach(System.out::println);
+            log.info("The following repositories are on Database but missing in Github:");
+            missingInRepo.forEach(repo -> log.info("  - {}", repo));
         }
 
         Set<String> missingInDb = githubRepoNames.stream()
                 .filter(repoName -> !dbRepoNames.contains(repoName))
                 .collect(Collectors.toSet());
         if (missingInDb.isEmpty()) {
-            log.error("No missing repositories found. All GitHub repositories are present in the database.");
+            log.info("No missing repositories found. All GitHub repositories are present in the database.");
             return Collections.emptySet();
         } else {
-            log.error("The following repositories are on GitHub but missing in the database:");
-            missingInDb.forEach(System.out::println);
+            log.info("The following repositories are on GitHub but missing in the database:");
+            missingInDb.forEach(repo -> log.info("  - {}", repo));
             return missingInDb;
         }
     }
@@ -126,15 +126,15 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 GitHubRepository firstRepo = reposToSave.get(0); // Get the first successfully fetched repo
                 saveAndEvent(reposToSave, firstRepo);
             } else {
-                log.error("No new missing repositories were successfully fetched for saving to DB.");
+                log.warn("No new missing repositories were successfully fetched for saving to DB.");
                 String payLoad = "No new repositories to DB repository"
                         + String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
-                log.error("Sending event to Eventstracker: " + payLoad);
+                log.info("Sending event to Eventstracker: {}", payLoad);
                 eventTrackerService.sendGitHubEventToEventstracker(payLoad);
             }
         } else {
             if (repositoriesService.countByRecords()) {
-                log.error("Repositories already exist in the database. No new repositories to fetch.");
+                log.info("Repositories already exist in the database. No new repositories to fetch.");
                 String payLoad = "No new repositories to DB repository"
                         + String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
                 eventTrackerService.sendGitHubEventToEventstracker(payLoad);
@@ -145,7 +145,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                     GitHubRepository firstRepo = reposToSave.get(0); // Get the first fetched repo
                     saveAndEvent(reposToSave, firstRepo);
                 } else {
-                    log.error("No user repositories found or fetched for saving to DB.");
+                    log.warn("No user repositories found or fetched for saving to DB.");
                     String payLoad = "No new repositories to DB repository"
                             + String.format(
                                     "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);

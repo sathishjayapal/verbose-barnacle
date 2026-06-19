@@ -1,5 +1,12 @@
 package me.sathish.my_github_cleaner.base.github;
 
+import lombok.extern.slf4j.Slf4j;
+import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
+
+import javax.net.ssl.SSLSession;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
@@ -7,12 +14,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import javax.net.ssl.SSLSession;
-import lombok.extern.slf4j.Slf4j;
-import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -94,7 +95,6 @@ public class GitHubDeleter implements GitHubServiceConstants {
                 }
             };
             handleResponse(response, repositoryName, githubUsername, repoRecordID);
-            log.error("Response body: {}", response.body());
             return response;
         }
     }
@@ -103,8 +103,11 @@ public class GitHubDeleter implements GitHubServiceConstants {
             HttpResponse<String> response, String repositoryName, String username, Long repoRecordID) {
         boolean isSuccess = response.statusCode() == SUCCESS_STATUS_CODE;
         String status = isSuccess ? "successfully" : "failed to be";
-        log.error(
-                "Repository {} {} {} deleted. Status: {}", repoRecordID, repositoryName, status, response.statusCode());
+        if (isSuccess) {
+            log.info("Repository {} {} {} deleted. Status: {}", repoRecordID, repositoryName, status, response.statusCode());
+        } else {
+            log.warn("Repository {} {} {} deleted. Status: {}", repoRecordID, repositoryName, status, response.statusCode());
+        }
         String eventPayload = createEventPayload(repositoryName, username, isSuccess, repoRecordID);
         eventTrackerService.sendGitHubEventToEventstracker(eventPayload);
     }

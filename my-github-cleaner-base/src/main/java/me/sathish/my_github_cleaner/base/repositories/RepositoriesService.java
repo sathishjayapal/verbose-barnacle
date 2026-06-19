@@ -1,8 +1,5 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
-import java.net.http.HttpResponse;
-import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.github.GitHubDeleter;
 import me.sathish.my_github_cleaner.base.util.NotFoundException;
@@ -12,6 +9,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -77,7 +78,7 @@ public class RepositoriesService {
     }
 
     public RepositoriesDTO get(final Long id) {
-        log.error("Fetching repository with ID: " + id);
+        log.debug("Fetching repository with ID: {}", id);
         return repositoriesRepository
                 .findById(id)
                 .map(repositories -> mapToDTO(repositories, new RepositoriesDTO()))
