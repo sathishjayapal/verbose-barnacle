@@ -104,9 +104,19 @@ public class GitHubDeleter implements GitHubServiceConstants {
         boolean isSuccess = response.statusCode() == SUCCESS_STATUS_CODE;
         String status = isSuccess ? "successfully" : "failed to be";
         if (isSuccess) {
-            log.info("Repository {} {} {} deleted. Status: {}", repoRecordID, repositoryName, status, response.statusCode());
+            log.info(
+                    "Repository {} {} {} deleted. Status: {}",
+                    repoRecordID,
+                    repositoryName,
+                    status,
+                    response.statusCode());
         } else {
-            log.warn("Repository {} {} {} deleted. Status: {}", repoRecordID, repositoryName, status, response.statusCode());
+            log.warn(
+                    "Repository {} {} {} deleted. Status: {}",
+                    repoRecordID,
+                    repositoryName,
+                    status,
+                    response.statusCode());
         }
         String eventPayload = createEventPayload(repositoryName, username, isSuccess, repoRecordID);
         eventTrackerService.sendGitHubEventToEventstracker(eventPayload);

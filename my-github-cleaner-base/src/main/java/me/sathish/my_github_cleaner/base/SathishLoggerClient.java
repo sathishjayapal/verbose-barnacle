@@ -19,15 +19,21 @@ public class SathishLoggerClient {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final String apiKey;
+    private final boolean enabled;
 
     public SathishLoggerClient(String baseUrl, String applicationName) {
-        this(baseUrl, applicationName, null);
+        this(baseUrl, applicationName, null, true);
     }
 
     public SathishLoggerClient(String baseUrl, String applicationName, String apiKey) {
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        this(baseUrl, applicationName, apiKey, true);
+    }
+
+    public SathishLoggerClient(String baseUrl, String applicationName, String apiKey, boolean enabled) {
+        this.baseUrl = baseUrl != null && baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.applicationName = applicationName;
         this.apiKey = apiKey;
+        this.enabled = enabled;
         this.httpClient =
                 HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         this.objectMapper = new ObjectMapper();
@@ -95,6 +101,9 @@ public class SathishLoggerClient {
 
     // Asynchronous core logging method
     public CompletableFuture<Void> logAsync(LogLevel level, String message, String correlationId, Throwable throwable) {
+        if (!enabled) {
+            return CompletableFuture.completedFuture(null);
+        }
         return CompletableFuture.runAsync(() -> {
             try {
                 Map<String, Object> logRequest = new HashMap<>();

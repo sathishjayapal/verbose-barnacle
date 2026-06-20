@@ -26,19 +26,28 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
     private final RepositoriesService repositoriesService;
     private final EventTrackerService eventTrackerService;
     private final Environment environment;
-    SathishLoggerClient logger = new SathishLoggerClient("http://localhost:8080", "my-app");
+    private final SathishLoggerClient logger;
 
     public GitHubDataRunner(
             GitHubService gitHubService,
             RepositoriesService repositoriesService,
             EventTrackerService eventTrackerService,
             Environment environment) {
-        String correlationId = UUID.randomUUID().toString();
-        logger.info("Processing request", correlationId);
         this.gitHubService = gitHubService;
         this.repositoriesService = repositoriesService;
         this.eventTrackerService = eventTrackerService;
         this.environment = environment;
+        this.logger = createLogger(environment);
+        String correlationId = UUID.randomUUID().toString();
+        logger.info("Processing request", correlationId);
+    }
+
+    private SathishLoggerClient createLogger(Environment environment) {
+        String loggerUrl = environment.getProperty("sathishlogger.url", "http://localhost:8080");
+        String appName = environment.getProperty("sathishlogger.application-name", "my-app");
+        String apiKey = environment.getProperty("sathishlogger.api-key");
+        boolean enabled = Boolean.parseBoolean(environment.getProperty("sathishlogger.enabled", "true"));
+        return new SathishLoggerClient(loggerUrl, appName, apiKey, enabled);
     }
 
     /**
@@ -130,14 +139,14 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 String payLoad = "No new repositories to DB repository"
                         + String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
                 log.info("Sending event to Eventstracker: {}", payLoad);
-                eventTrackerService.sendGitHubEventToEventstracker(payLoad);
+                sendEventSafely(payLoad);
             }
         } else {
             if (repositoriesService.countByRecords()) {
                 log.info("Repositories already exist in the database. No new repositories to fetch.");
                 String payLoad = "No new repositories to DB repository"
                         + String.format("{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
-                eventTrackerService.sendGitHubEventToEventstracker(payLoad);
+                sendEventSafely(payLoad);
             } else {
                 List<GitHubRepository> reposToSave =
                         gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty(GITHUB_USERNAME_KEY));
@@ -149,7 +158,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                     String payLoad = "No new repositories to DB repository"
                             + String.format(
                                     "{\"addedAt\":\"%s\",\"addedBy\":\"%s\"}", LocalDateTime.now(), SYSTEM_USER);
-                    eventTrackerService.sendGitHubEventToEventstracker(payLoad);
+                    sendEventSafely(payLoad);
                 }
             }
         }
@@ -171,7 +180,22 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
                 + String.format(
                         "{\"repositoryName\":\"%s\",\"addedAt\":\"%s\",\"addedBy\":\"%s\"}",
                         repositoryName, LocalDateTime.now(), SYSTEM_USER);
-        eventTrackerService.sendGitHubEventToEventstracker(payLoad);
+        sendEventSafely(payLoad);
+    }
+
+    /**
+     * Send an event to the EventTracker service, but do not let an event tracker failure
+     * crash the runner. The primary responsibility of this runner is to sync GitHub
+     * repositories into the database; event tracking is secondary.
+     *
+     * @param payLoad the event payload to send
+     */
+    private void sendEventSafely(String payLoad) {
+        try {
+            eventTrackerService.sendGitHubEventToEventstracker(payLoad);
+        } catch (Exception e) {
+            log.warn("Failed to send event to EventTracker: {}. Continuing with repository sync.", e.getMessage());
+        }
     }
 
     /**

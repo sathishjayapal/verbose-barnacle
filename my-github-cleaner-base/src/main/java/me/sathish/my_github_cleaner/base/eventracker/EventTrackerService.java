@@ -53,9 +53,11 @@ public class EventTrackerService {
     public void fetchDomainsOnStartup() {
         try {
             HttpClient client = HttpClient.newHttpClient();
-            String eventsTrackerUrl = environment.getProperty("eventstracker_url", "http://localhost:9081");
-            String EventServiceUserName = environment.getProperty("eventstracker_username", "system");
-            String EventServicePassword = environment.getProperty("eventstracker_password", "system");
+            String eventsTrackerUrl = environment.getProperty("EVENTSTRACKER_URL");
+            String EventServiceUserName = environment.getProperty("eventstracker_username");
+            String EventServicePassword = environment.getProperty("eventstracker_password");
+
+            log.debug("Fetching domains from EventTracker URL: {} as user: {}", eventsTrackerUrl, EventServiceUserName);
 
             // Validate required configuration
             if (eventsTrackerUrl == null || eventsTrackerUrl.trim().isEmpty()) {
@@ -84,22 +86,23 @@ public class EventTrackerService {
                 String errorMsg = String.format(
                         "Failed to fetch domains. HTTP Status: %d, Response: %s",
                         domainsResponse.statusCode(), domainsResponse.body());
+                // Keep startup resilient; event publishing path will fail fast if domains remain unavailable.
                 log.error(errorMsg);
-                throw new EventTrackerException(errorMsg);
+                domainsData = List.of();
             }
         } catch (IOException e) {
             String errorMsg = "Network error while fetching domains: " + e.getMessage();
             log.error(errorMsg, e);
-            throw new EventTrackerException(errorMsg, e);
+            domainsData = List.of();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             String errorMsg = "Request interrupted while fetching domains: " + e.getMessage();
             log.error(errorMsg, e);
-            throw new EventTrackerException(errorMsg, e);
+            domainsData = List.of();
         } catch (Exception e) {
             String errorMsg = "Unexpected error while fetching domains: " + e.getMessage();
             log.error(errorMsg, e);
-            throw new EventTrackerException(errorMsg, e);
+            domainsData = List.of();
         }
     }
 
@@ -118,9 +121,13 @@ public class EventTrackerService {
 
         // Check if domains data is available
         if (domainsData == null || domainsData.isEmpty()) {
-            String errorMsg = "Domains data is not available. Service may not be properly initialized.";
-            log.error(errorMsg);
-            throw new EventTrackerException(errorMsg);
+            // Retry once lazily in case EventTracker became available after app startup.
+            fetchDomainsOnStartup();
+            if (domainsData == null || domainsData.isEmpty()) {
+                String errorMsg = "Domains data is not available. Service may not be properly initialized.";
+                log.error(errorMsg);
+                throw new EventTrackerException(errorMsg);
+            }
         }
 
         try {
@@ -157,13 +164,13 @@ public class EventTrackerService {
         eventDTO.setUpdatedBy(environment.getProperty("githubusername", "system"));
 
         Optional<DomainDTO> domainOpt = domainsData.stream()
-                .filter(d -> "GITHUB_REPO".equals(d.getDomainName()))
+                .filter(d -> "GITHUB_DOMAIN".equals(d.getDomainName()))
                 .findFirst();
 
         if (domainOpt.isPresent()) {
             eventDTO.setDomain(domainOpt.get().getId());
         } else {
-            String errorMsg = "Domain 'GITHUB_REPO' not found in available domains. Available domains: "
+            String errorMsg = "Domain 'GITHUB_DOMAIN' not found in available domains. Available domains: "
                     + domainsData.stream().map(DomainDTO::getDomainName).toList();
             log.error(errorMsg);
             throw new EventTrackerException(errorMsg);

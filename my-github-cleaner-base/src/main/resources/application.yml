@@ -1,88 +1,42 @@
-
 spring:
-
-  datasource:
-    url: ${JDBC_DATABASE_URL}
-    username: ${JDBC_DATABASE_USERNAME}
-    password: ${JDBC_DATABASE_PASSWORD}
-    hikari:
-      connection-timeout: 30000
-      maximum-pool-size: 10
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-    properties:
-      hibernate:
-        jdbc:
-          lob:
-            non_contextual_creation: true
-        id:
-          new_generator_mappings: true
-  docker:
-    compose:
-      lifecycle-management: start-only
-      enabled: false
+  application:
+    name: my-github-cleaner
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - configserver:${CONFIG_SERVER_URL}
   cloud:
     config:
-      username: ${configserverUsername}
-      password: ${configserverPassword}
-    kubernetes:
-      discovery:
-        all-namespaces: true
-  config:
-    username: ${configserverUsername}
-    password: ${configserverPassword}
-    uri: ${configuri}
-    fail-fast: true
-    import: "optional:configserver:http://${configuri}/?fail-fast=true&max-attempts=10&max-interval=1500&multiplier=1.2&initial-interval=1000"
+      username: ${SPRING_CLOUD_CONFIG_USERNAME}
+      password: ${SPRING_CLOUD_CONFIG_PASSWORD}
+      fail-fast: true
+      retry:
+        max-attempts: 10
+        initial-interval: 1000
+        max-interval: 1500
+        multiplier: 1.2
+  docker:
+    compose:
+      enabled: false
+      lifecycle-management: none
 
 logging:
-  pattern:
-    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(---){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %clr(%t){magenta} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
-  file:
-    name: "applogs/app.log"
-    logging.pattern.file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   level:
-    org.springframework.web: INFO
+    root: ${LOG_LEVEL:INFO}
+    me.sathish.my_github_cleaner: ${APP_LOG_LEVEL:INFO}
+    org.springframework.web: ${WEB_LOG_LEVEL:INFO}
+    org.hibernate.SQL: ${HIBERNATE_SQL_LEVEL:WARN}
+    org.hibernate.type.descriptor.sql: ${HIBERNATE_TYPE_LEVEL:WARN}
+    org.hibernate.stat: WARN
+    org.hibernate.tool.hbm2ddl: WARN
+    org.hibernate.engine.internal: WARN
+    org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl: WARN
     com.zaxxer.hikari: ERROR
-    root: debug
+    sun.rmi: WARN
+    javax.management.remote.rmi: WARN
+    java.net.http: WARN
 
-error:
-  handling:
-    http-status-in-json-response: true
-    exception-logging: NO_LOGGING
-    full-stacktrace-http-statuses: 5xx
-    log-levels:
-      5xx: ERROR
-    http-statuses:
-      org.springframework.security.authorization.AuthorizationDeniedException: unauthorized
-    codes:
-      RepositoriesRepoNameUnique: REPOSITORIES_REPO_NAME_UNIQUE
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health
-  endpoint:
-    health:
-      show-details: always
-  server:
-    port: ${MANAGEMENT_PORT:8081}
-server:
-  port: ${PORT:7080}
-
-# Eventstracker service configuration
-eventstracker:
-  url: ${EVENTSTRACKER_URL:http://localhost:9081}
-decorator:
-  datasource:
-    p6spy:
-      enable-logging: true
-      custom-appender-class: com.p6spy.engine.spy.appender.MultiLineFormat
-sathishprojects:
-  github_operations_queue: q.sathishprojects.github.api.events
-  sathish_project_events_exchange: x.sathishprojects.fanout
-  github_routing_key: sathishprojects.github.api.event
-
-
+sathishlogger:
+  enabled: ${SATHISHLOGGER_ENABLED:false}
+  url: ${SATHISHLOGGER_URL:http://localhost:8080}
+  application-name: ${SATHISHLOGGER_APP_NAME:my-app}
