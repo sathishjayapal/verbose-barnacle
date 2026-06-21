@@ -1,70 +1,109 @@
 # MyGithubCleaner
-GitHubCleaner is a tool to clean up your GitHub account by removing unwanted repositories, issues, and pull requests.
-## Development
 
-When starting the application `docker compose up` is called and the app will connect to the contained services.
-[Docker](https://www.docker.com/get-started/) must be available on the current system.
+A Spring Boot multi-module application that syncs, manages, and deletes GitHub repositories. It integrates with an
+EventTracker service via RabbitMQ and uses Spring Cloud Config for externalized configuration.
 
-During development it is recommended to use the profile `local`. In IntelliJ `-Dspring.profiles.active=local` can be
-added in the VM options of the Run Configuration after enabling this property in "Modify options". Create your own
-`application-local.yml` file to override settings for development. For this multi-module
-project you have to select the highest module `my-github-cleaner-web` as the classpath.
+## Architecture
 
-Lombok must be supported by your IDE. For IntelliJ install the Lombok plugin and enable annotation processing -
-[learn more](https://bootify.io/next-steps/spring-boot-with-lombok.html).
+| Module                   | Purpose                                                                    |
+|--------------------------|----------------------------------------------------------------------------|
+| `my-github-cleaner-base` | Core logic: GitHub API client, repository sync, event tracking, scheduling |
+| `my-github-cleaner-web`  | Web layer: REST endpoints, security, React/TypeScript frontend             |
 
-In addition to the Spring Boot application, the DevServer must also be started - for this
-[Node.js](https://nodejs.org/) version 22 is required. On first usage and after updates the dependencies have to be installed:
+**Key integrations:**
 
+- **GitHub API** — fetches repos, deletes repos on demand
+- **PostgreSQL** — persists repository metadata
+- **RabbitMQ** — publishes domain events to EventTracker
+- **Spring Cloud Config** — centralized configuration (via config server)
+- **Spring Cloud Kubernetes Discovery** — service discovery in K8s
+
+## Prerequisites
+
+- Java 24
+- [Docker](https://www.docker.com/get-started/) (for local PostgreSQL)
+- [Node.js](https://nodejs.org/) 22+ (for frontend dev server)
+- Access to a Spring Cloud Config Server
+
+## Getting Started
+
+### 1. Environment
+
+Copy the `.env` template in `my-github-cleaner-base/` and fill in your values:
+
+```bash
+cp my-github-cleaner-base/.env.template my-github-cleaner-base/.env
 ```
+
+Key variables: `GITHUB_TOKEN`, `JDBC_DATABASE_URL`, `RABBITMQ_HOST`, `CONFIG_SERVER_URL`.
+
+### 2. Start Infrastructure
+
+```bash
+docker compose up -d
+```
+
+This starts a local PostgreSQL instance on port **5439**.
+
+### 3. Run the Backend
+
+Use the `local` profile. In IntelliJ add `-Dspring.profiles.active=local` to VM options, selecting module
+`my-github-cleaner-web` as the classpath.
+
+```bash
+./mvnw spring-boot:run -pl my-github-cleaner-web -Dspring-boot.run.profiles=local
+```
+
+### 4. Run the Frontend Dev Server
+
+```bash
 npm install
-```
-
-The DevServer can be started as follows:
-
-```
 npm run devserver
 ```
 
-Using a proxy the whole application is now accessible under `localhost:3000`. All changes to the templates and JS/CSS
-files are immediately visible in the browser.
+The frontend is served at `localhost:3000` and proxies API calls to the backend at `localhost:7080`.
 
-## Testing requirements
+## Testing
 
-Testcontainers is used for running the integration tests. Due
-to the reuse flag, the container will not shut down after the tests. It can be stopped manually if needed.
-
-Frontend unit tests can be executed with `npm run test`.
+- **Integration tests** use Testcontainers (container reuse is enabled).
+- **Frontend tests:** `npm run test`
 
 ## Build
 
-The application can be tested and built using the following command:
-
-```
-mvnw clean package
+```bash
+./mvnw clean package
 ```
 
-Node.js is automatically downloaded using the `frontend-maven-plugin` and the final JS/CSS files are integrated into the jar.
+Node.js is auto-downloaded via `frontend-maven-plugin`; final JS/CSS is bundled into the jar.
 
-Start your application with the following command - here with the profile `production`:
+### Run the Jar
 
-```
+```bash
 java -Dspring.profiles.active=production -jar ./my-github-cleaner-web/target/my-github-cleaner-web-0.0.1-SNAPSHOT.jar
 ```
 
-If required, a Docker image can be created with the Spring Boot plugin. Add `SPRING_PROFILES_ACTIVE=production` as
-environment variable when running the container.
+### Docker Image
 
+```bash
+./mvnw spring-boot:build-image -Dspring-boot.build-image.imageName=me.sathish/my-github-cleaner
 ```
-mvnw spring-boot:build-image -Dspring-boot.build-image.imageName=me.sathish/my-github-cleaner
-```
 
-## Further readings
+Set `SPRING_PROFILES_ACTIVE=production` when running the container.
 
-* [Maven docs](https://maven.apache.org/guides/index.html)  
-* [Spring Boot reference](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/)  
-* [Spring Data JPA reference](https://docs.spring.io/spring-data/jpa/reference/jpa.html)
-* [Learn React](https://react.dev/learn)
-* [Webpack concepts](https://webpack.js.org/concepts/)  
-* [npm docs](https://docs.npmjs.com/)  
-* [Tailwind CSS](https://tailwindcss.com/)  
+## Kubernetes
+
+A discovery server manifest is provided in `k8s/kubernetes-discoveryserver.yaml` for Spring Cloud Kubernetes service
+discovery.
+
+## Security
+
+Authentication uses HTTP Basic with bcrypt-encoded passwords. Credentials are configured via environment variables
+(`app.security.admin.*`, `app.security.viewer.*`). **Never commit real credentials to version control.**
+
+## Further Reading
+
+- [Spring Boot Reference](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/)
+- [Spring Cloud Config](https://docs.spring.io/spring-cloud-config/docs/current/reference/html/)
+- [Spring Data JPA](https://docs.spring.io/spring-data/jpa/reference/jpa.html)
+- [React](https://react.dev/learn)
+- [Tailwind CSS](https://tailwindcss.com/)
