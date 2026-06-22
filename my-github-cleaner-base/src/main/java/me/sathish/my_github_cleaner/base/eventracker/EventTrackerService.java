@@ -137,7 +137,7 @@ public class EventTrackerService {
             log.info("Sending GitHub event to EventTracker. Event ID: {}", eventDTO.getEventId());
             log.debug("Event Payload: {}", jsonPayload);
 
-            sendToRabbitMQ(jsonPayload);
+            sendToRabbitMQ(eventDTO);
 
             log.info("Successfully sent GitHub event to EventTracker. Event ID: {}", eventDTO.getEventId());
 
@@ -180,9 +180,9 @@ public class EventTrackerService {
     }
 
     /**
-     * Sends the JSON payload to RabbitMQ with proper error handling.
+     * Sends the DomainEventDTO to RabbitMQ with proper error handling.
      */
-    private void sendToRabbitMQ(String jsonPayload) {
+    private void sendToRabbitMQ(DomainEventDTO eventDTO) {
         try {
             String exchange = rabbitConfigProperties.sathishProjectEventsExchange();
             String routingKey = rabbitConfigProperties.githubRoutingKey();
@@ -199,7 +199,7 @@ public class EventTrackerService {
             // Send multiple messages as per original logic, but with better error handling
             for (int i = 0; i < 10; i++) {
                 try {
-                    rabbitTemplate.convertAndSend(exchange, routingKey, jsonPayload);
+                    rabbitTemplate.convertAndSend(exchange, routingKey, eventDTO);
                     log.debug("Successfully sent message {} of 10 to RabbitMQ", i + 1);
                 } catch (Exception e) {
                     String errorMsg =
