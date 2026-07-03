@@ -4,16 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import me.sathish.my_github_cleaner.base.config.RabbitMQConfiguration;
-import me.sathish.my_github_cleaner.base.util.RabbitConfigProperties;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,6 +13,15 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import me.sathish.my_github_cleaner.base.config.RabbitMQConfiguration;
+import me.sathish.my_github_cleaner.base.util.RabbitConfigProperties;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -196,18 +195,7 @@ public class EventTrackerService {
 
             log.debug("Sending message to RabbitMQ exchange: {}, routing key: {}", exchange, routingKey);
 
-            // Send multiple messages as per original logic, but with better error handling
-            for (int i = 0; i < 10; i++) {
-                try {
-                    rabbitTemplate.convertAndSend(exchange, routingKey, eventDTO);
-                    log.debug("Successfully sent message {} of 10 to RabbitMQ", i + 1);
-                } catch (Exception e) {
-                    String errorMsg =
-                            String.format("Failed to send message %d of 10 to RabbitMQ: %s", i + 1, e.getMessage());
-                    log.error(errorMsg, e);
-                    // Continue with other messages, but log the failure
-                }
-            }
+            rabbitTemplate.convertAndSend(exchange, routingKey, eventDTO);
         } catch (Exception e) {
             String errorMsg = "Failed to send messages to RabbitMQ: " + e.getMessage();
             log.error(errorMsg, e);
