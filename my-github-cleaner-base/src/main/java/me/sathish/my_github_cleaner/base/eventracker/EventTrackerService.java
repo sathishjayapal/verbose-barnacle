@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -51,42 +52,51 @@ public class EventTrackerService {
     @PostConstruct
     public void fetchDomainsOnStartup() {
         try {
-            HttpClient client = HttpClient.newHttpClient();
+            HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
             String eventsTrackerUrl = environment.getProperty("EVENTSTRACKER_URL");
-            String EventServiceUserName = environment.getProperty("eventstracker_username");
-            String EventServicePassword = environment.getProperty("eventstracker_password");
+            String eventServiceUserName = environment.getProperty("eventstracker_username");
+            String eventServicePassword = environment.getProperty("eventstracker_password");
 
-            log.debug("Fetching domains from EventTracker URL: {} as user: {}", eventsTrackerUrl, EventServiceUserName);
+            log.info("Fetching domains from EventTracker URL: {} as user: {}", eventsTrackerUrl, eventServiceUserName);
 
             // Validate required configuration
             if (eventsTrackerUrl == null || eventsTrackerUrl.trim().isEmpty()) {
                 throw new IllegalStateException("EventTracker URL is not configured");
             }
 
+            String credentials = Base64.getEncoder()
+                    .encodeToString(
+                            (eventServiceUserName + ":" + eventServicePassword).getBytes(StandardCharsets.UTF_8));
+
+            URI domainsUri = URI.create(eventsTrackerUrl.replaceAll("/+$", "") + "/api/domains");
             HttpRequest getDomainsRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(eventsTrackerUrl + "/api/domains"))
-                    .header("Content-Type", "application/json")
+                    .uri(domainsUri)
                     .header("Accept", "application/json")
-                    .header(
-                            "Authorization",
-                            "Basic "
-                                    + Base64.getEncoder()
-                                            .encodeToString(
-                                                    (EventServiceUserName + ":" + EventServicePassword).getBytes()))
+                    .header("Authorization", "Basic " + credentials)
                     .GET()
                     .build();
 
+            log.info("Requesting domains from: {}", domainsUri);
+
             HttpResponse<String> domainsResponse = client.send(getDomainsRequest, HttpResponse.BodyHandlers.ofString());
+
+            log.info(
+                    "EventTracker response: status={}, finalURI={}",
+                    domainsResponse.statusCode(),
+                    domainsResponse.uri());
 
             if (domainsResponse.statusCode() == 200) {
                 domainsData = objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
                 log.info("Successfully fetched {} domains on startup", domainsData.size());
             } else {
-                String errorMsg = String.format(
-                        "Failed to fetch domains. HTTP Status: %d, Response: %s",
-                        domainsResponse.statusCode(), domainsResponse.body());
-                // Keep startup resilient; event publishing path will fail fast if domains remain unavailable.
-                log.error(errorMsg);
+                log.error(
+                        "Failed to fetch domains. HTTP Status: {}, Final URI: {}, Response: {}",
+                        domainsResponse.statusCode(),
+                        domainsResponse.uri(),
+                        domainsResponse.body());
                 domainsData = List.of();
             }
         } catch (IOException e) {
