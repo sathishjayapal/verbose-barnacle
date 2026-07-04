@@ -52,17 +52,14 @@ public class EventTrackerService {
     @PostConstruct
     public void fetchDomainsOnStartup() {
         try {
-            HttpClient client = HttpClient.newBuilder()
-                    .version(HttpClient.Version.HTTP_1_1)
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .build();
+            HttpClient client =
+                    HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
             String eventsTrackerUrl = environment.getProperty("EVENTSTRACKER_URL");
             String eventServiceUserName = environment.getProperty("eventstracker_username");
             String eventServicePassword = environment.getProperty("eventstracker_password");
 
             log.info("Fetching domains from EventTracker URL: {} as user: {}", eventsTrackerUrl, eventServiceUserName);
 
-            // Validate required configuration
             if (eventsTrackerUrl == null || eventsTrackerUrl.trim().isEmpty()) {
                 throw new IllegalStateException("EventTracker URL is not configured");
             }
@@ -83,20 +80,45 @@ public class EventTrackerService {
 
             HttpResponse<String> domainsResponse = client.send(getDomainsRequest, HttpResponse.BodyHandlers.ofString());
 
-            log.info(
-                    "EventTracker response: status={}, finalURI={}",
-                    domainsResponse.statusCode(),
-                    domainsResponse.uri());
+            int status = domainsResponse.statusCode();
+            log.info("EventTracker response: status={}", status);
 
-            if (domainsResponse.statusCode() == 200) {
-                domainsData = objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
-                log.info("Successfully fetched {} domains on startup", domainsData.size());
-            } else {
+            if (status >= 300 && status < 400) {
+                String location =
+                        domainsResponse.headers().firstValue("Location").orElse("(none)");
                 log.error(
-                        "Failed to fetch domains. HTTP Status: {}, Final URI: {}, Response: {}",
-                        domainsResponse.statusCode(),
-                        domainsResponse.uri(),
-                        domainsResponse.body());
+                        "EventTracker redirected ({}). Location: {}. "
+                                + "This usually means Basic auth was rejected — check that user '{}' exists in eventstracker's database "
+                                + "and the password matches.",
+                        status,
+                        location,
+                        eventServiceUserName);
+                domainsData = List.of();
+            } else if (status == 401) {
+                log.error(
+                        "EventTracker returned 401 Unauthorized. Check eventstracker_username/eventstracker_password credentials.");
+                domainsData = List.of();
+            } else if (status == 200) {
+                String contentType =
+                        domainsResponse.headers().firstValue("Content-Type").orElse("");
+                if (!contentType.contains("application/json")) {
+                    log.error(
+                            "EventTracker returned 200 but Content-Type is '{}' (expected application/json). "
+                                    + "Response body starts with: {}",
+                            contentType,
+                            domainsResponse
+                                    .body()
+                                    .substring(
+                                            0,
+                                            Math.min(200, domainsResponse.body().length())));
+                    domainsData = List.of();
+                } else {
+                    domainsData =
+                            objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
+                    log.info("Successfully fetched {} domains on startup", domainsData.size());
+                }
+            } else {
+                log.error("Failed to fetch domains. HTTP Status: {}, Response: {}", status, domainsResponse.body());
                 domainsData = List.of();
             }
         } catch (IOException e) {
