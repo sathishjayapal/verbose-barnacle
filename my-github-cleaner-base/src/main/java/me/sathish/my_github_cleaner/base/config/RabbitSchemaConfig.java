@@ -21,6 +21,7 @@ public class RabbitSchemaConfig {
     public static final String GITHUB_OPS_EVENTS_QUEUE = "q.sathishprojects.github.ops.events";
     public static final String DLQ_GITHUB_API_EVENTS_QUEUE = "dlq.sathishprojects.github.api.events";
     public static final String DLQ_GITHUB_OPS_EVENTS_QUEUE = "dlq.sathishprojects.github.ops.events";
+    public static final String GITHUB_CLEANUP_QUEUE = "q.sathishprojects.github.cleanup";
 
     // Routing keys
     public static final String GITHUB_API_ROUTING_KEY = "sathishprojects.github.api.*";
@@ -41,9 +42,12 @@ public class RabbitSchemaConfig {
                 .withArgument("x-message-ttl", MESSAGE_TTL_MS)
                 .build();
 
-        Queue dlqSatProjectsEventsQueue = QueueBuilder.durable(DLQ_SAT_PROJECTS_EVENTS_QUEUE).build();
-        Queue dlqGitHubApiEventsQueue = QueueBuilder.durable(DLQ_GITHUB_API_EVENTS_QUEUE).build();
-        Queue dlqGitHubOpsEventsQueue = QueueBuilder.durable(DLQ_GITHUB_OPS_EVENTS_QUEUE).build();
+        Queue dlqSatProjectsEventsQueue =
+                QueueBuilder.durable(DLQ_SAT_PROJECTS_EVENTS_QUEUE).build();
+        Queue dlqGitHubApiEventsQueue =
+                QueueBuilder.durable(DLQ_GITHUB_API_EVENTS_QUEUE).build();
+        Queue dlqGitHubOpsEventsQueue =
+                QueueBuilder.durable(DLQ_GITHUB_OPS_EVENTS_QUEUE).build();
 
         Queue gitHubApiEventsQueue = QueueBuilder.durable(GITHUB_API_EVENTS_QUEUE)
                 .withArgument("x-dead-letter-exchange", GITHUB_EVENTS_DLX_EXCHANGE)
@@ -55,6 +59,11 @@ public class RabbitSchemaConfig {
                 .withArgument("x-dead-letter-exchange", GITHUB_EVENTS_DLX_EXCHANGE)
                 .withArgument("x-message-ttl", MESSAGE_TTL_MS)
                 .withArgument("x-dead-letter-routing-key", GITHUB_OPS_ROUTING_KEY)
+                .build();
+
+        Queue gitHubCleanupQueue = QueueBuilder.durable(GITHUB_CLEANUP_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-message-ttl", MESSAGE_TTL_MS)
                 .build();
 
         // Bindings
@@ -72,18 +81,24 @@ public class RabbitSchemaConfig {
                 gitHubOpsEventsQueue,
                 dlqGitHubApiEventsQueue,
                 dlqGitHubOpsEventsQueue,
+                gitHubCleanupQueue,
 
                 // Bindings
                 BindingBuilder.bind(satProjectsEventsQueue).to(fanoutExchange),
                 BindingBuilder.bind(dlqSatProjectsEventsQueue).to(dlxExchange).with("#"),
-                BindingBuilder.bind(gitHubApiEventsQueue).to(gitHubEventsExchange).with(GITHUB_API_ROUTING_KEY),
-                BindingBuilder.bind(gitHubOpsEventsQueue).to(gitHubEventsExchange).with(GITHUB_OPS_ROUTING_KEY),
+                BindingBuilder.bind(gitHubApiEventsQueue)
+                        .to(gitHubEventsExchange)
+                        .with(GITHUB_API_ROUTING_KEY),
+                BindingBuilder.bind(gitHubOpsEventsQueue)
+                        .to(gitHubEventsExchange)
+                        .with(GITHUB_OPS_ROUTING_KEY),
                 BindingBuilder.bind(dlqGitHubApiEventsQueue)
                         .to(gitHubEventsDlxExchange)
                         .with(GITHUB_API_ROUTING_KEY),
                 BindingBuilder.bind(dlqGitHubOpsEventsQueue)
                         .to(gitHubEventsDlxExchange)
                         .with(GITHUB_OPS_ROUTING_KEY),
-                BindingBuilder.bind(gitHubEventsExchange).to(fanoutExchange));
+                BindingBuilder.bind(gitHubEventsExchange).to(fanoutExchange),
+                BindingBuilder.bind(gitHubCleanupQueue).to(fanoutExchange));
     }
 }
