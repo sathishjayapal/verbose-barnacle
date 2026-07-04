@@ -1,7 +1,10 @@
 package me.sathish.my_github_cleaner.base.github;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,13 +85,44 @@ public class GitHubService implements GitHubServiceConstants {
     }
 
     public List<GitHubRepository> fetchAllPublicRepositoriesForUser(String username) {
-        String url = buildUri(AUTH_USER_REPOS_PATH);
         HttpHeaders headers = new HttpHeaders();
         setAuthorizationHeader(headers);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<List<GitHubRepository>> response = restTemplate.exchange(
-                url, HttpMethod.GET, entity, new org.springframework.core.ParameterizedTypeReference<>() {});
-        return response.getBody();
+
+        List<GitHubRepository> allRepos = new ArrayList<>();
+        String url = buildUri(AUTH_USER_REPOS_PATH) + "&page=1";
+
+        while (url != null) {
+            log.info("Fetching repositories from: {}", url);
+            ResponseEntity<List<GitHubRepository>> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, new org.springframework.core.ParameterizedTypeReference<>() {});
+
+            List<GitHubRepository> page = response.getBody();
+            if (page != null) {
+                allRepos.addAll(page);
+            }
+
+            url = extractNextPageUrl(response.getHeaders());
+        }
+
+        log.info("Fetched {} total repositories across all pages", allRepos.size());
+        return allRepos;
+    }
+
+    private static final Pattern NEXT_LINK_PATTERN = Pattern.compile("<([^>]+)>;\\s*rel=\"next\"");
+
+    private String extractNextPageUrl(HttpHeaders headers) {
+        List<String> linkHeaders = headers.get("Link");
+        if (linkHeaders == null) {
+            return null;
+        }
+        for (String linkHeader : linkHeaders) {
+            Matcher matcher = NEXT_LINK_PATTERN.matcher(linkHeader);
+            if (matcher.find()) {
+                return matcher.group(1);
+            }
+        }
+        return null;
     }
 
     private void setAuthorizationHeader(HttpHeaders headers) {
