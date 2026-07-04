@@ -59,7 +59,8 @@ export default function RepositoriesEdit() {
   const updateRepositories = async (data: RepositoriesDTO) => {
     window.scrollTo(0, 0);
     try {
-      await axios.put('/api/repositories/' + currentId, data);
+      await axios.put('/api/repositories/' + currentId, data,
+          { headers: { authorization: getBasicAuthHeader() } });
       navigate('/repositories', {
             state: {
               msgSuccess: t('repositories.update.success')
