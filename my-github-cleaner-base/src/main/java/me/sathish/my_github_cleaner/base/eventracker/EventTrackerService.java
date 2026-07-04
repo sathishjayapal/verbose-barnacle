@@ -51,18 +51,19 @@ public class EventTrackerService {
 
     @PostConstruct
     public void fetchDomainsOnStartup() {
+        String eventsTrackerUrl = environment.getProperty("EVENTSTRACKER_URL");
+        String eventServiceUserName = environment.getProperty("eventstracker_username");
+        String eventServicePassword = environment.getProperty("eventstracker_password");
+
+        validateRequiredProperty("EVENTSTRACKER_URL", eventsTrackerUrl);
+        validateRequiredProperty("eventstracker_username", eventServiceUserName);
+        validateRequiredProperty("eventstracker_password", eventServicePassword);
+
+        log.info("Connecting to EventTracker at {} as user '{}'", eventsTrackerUrl, eventServiceUserName);
+
         try {
             HttpClient client =
                     HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
-            String eventsTrackerUrl = environment.getProperty("EVENTSTRACKER_URL");
-            String eventServiceUserName = environment.getProperty("eventstracker_username");
-            String eventServicePassword = environment.getProperty("eventstracker_password");
-
-            log.info("Fetching domains from EventTracker URL: {} as user: {}", eventsTrackerUrl, eventServiceUserName);
-
-            if (eventsTrackerUrl == null || eventsTrackerUrl.trim().isEmpty()) {
-                throw new IllegalStateException("EventTracker URL is not configured");
-            }
 
             String credentials = Base64.getEncoder()
                     .encodeToString(
@@ -76,64 +77,67 @@ public class EventTrackerService {
                     .GET()
                     .build();
 
-            log.info("Requesting domains from: {}", domainsUri);
-
             HttpResponse<String> domainsResponse = client.send(getDomainsRequest, HttpResponse.BodyHandlers.ofString());
-
             int status = domainsResponse.statusCode();
-            log.info("EventTracker response: status={}", status);
+
+            if (status == 401 || status == 403) {
+                throw new IllegalStateException(String.format(
+                        "EventTracker authentication failed (HTTP %d). "
+                                + "The password for user '%s' is wrong. "
+                                + "Fix 'eventstracker_password' in your environment and restart.",
+                        status, eventServiceUserName));
+            }
 
             if (status >= 300 && status < 400) {
                 String location =
                         domainsResponse.headers().firstValue("Location").orElse("(none)");
-                log.error(
-                        "EventTracker redirected ({}). Location: {}. "
-                                + "This usually means Basic auth was rejected — check that user '{}' exists in eventstracker's database "
-                                + "and the password matches.",
-                        status,
-                        location,
-                        eventServiceUserName);
-                domainsData = List.of();
-            } else if (status == 401) {
-                log.error(
-                        "EventTracker returned 401 Unauthorized. Check eventstracker_username/eventstracker_password credentials.");
-                domainsData = List.of();
-            } else if (status == 200) {
-                String contentType =
-                        domainsResponse.headers().firstValue("Content-Type").orElse("");
-                if (!contentType.contains("application/json")) {
-                    log.error(
-                            "EventTracker returned 200 but Content-Type is '{}' (expected application/json). "
-                                    + "Response body starts with: {}",
-                            contentType,
-                            domainsResponse
-                                    .body()
-                                    .substring(
-                                            0,
-                                            Math.min(200, domainsResponse.body().length())));
-                    domainsData = List.of();
-                } else {
-                    domainsData =
-                            objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
-                    log.info("Successfully fetched {} domains on startup", domainsData.size());
-                }
-            } else {
-                log.error("Failed to fetch domains. HTTP Status: {}, Response: {}", status, domainsResponse.body());
-                domainsData = List.of();
+                throw new IllegalStateException(String.format(
+                        "EventTracker returned HTTP %d (redirect to %s). "
+                                + "This means the credentials for user '%s' were rejected. "
+                                + "Fix 'eventstracker_password' in your environment and restart.",
+                        status, location, eventServiceUserName));
             }
+
+            if (status != 200) {
+                throw new IllegalStateException(String.format(
+                        "EventTracker returned HTTP %d. Expected 200. Response: %s", status, domainsResponse.body()));
+            }
+
+            String contentType =
+                    domainsResponse.headers().firstValue("Content-Type").orElse("");
+            if (!contentType.contains("application/json")) {
+                throw new IllegalStateException(String.format(
+                        "EventTracker returned Content-Type '%s' instead of application/json. "
+                                + "Response starts with: %s",
+                        contentType,
+                        domainsResponse
+                                .body()
+                                .substring(
+                                        0, Math.min(200, domainsResponse.body().length()))));
+            }
+
+            domainsData = objectMapper.readValue(domainsResponse.body(), new TypeReference<List<DomainDTO>>() {});
+            log.info("Successfully fetched {} domains from EventTracker", domainsData.size());
+
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (IOException e) {
-            String errorMsg = "Network error while fetching domains: " + e.getMessage();
-            log.error(errorMsg, e);
-            domainsData = List.of();
+            throw new IllegalStateException(
+                    "Cannot reach EventTracker at " + eventsTrackerUrl + ". Is the service running? Error: "
+                            + e.getMessage(),
+                    e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            String errorMsg = "Request interrupted while fetching domains: " + e.getMessage();
-            log.error(errorMsg, e);
-            domainsData = List.of();
-        } catch (Exception e) {
-            String errorMsg = "Unexpected error while fetching domains: " + e.getMessage();
-            log.error(errorMsg, e);
-            domainsData = List.of();
+            throw new IllegalStateException("Interrupted while connecting to EventTracker", e);
+        }
+    }
+
+    private void validateRequiredProperty(String name, String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalStateException(String.format(
+                    "Required property '%s' is missing or empty. "
+                            + "Set it in your environment variables and restart.",
+                    name));
         }
     }
 
@@ -150,15 +154,9 @@ public class EventTrackerService {
             throw new IllegalArgumentException("Payload cannot be null or empty");
         }
 
-        // Check if domains data is available
         if (domainsData == null || domainsData.isEmpty()) {
-            // Retry once lazily in case EventTracker became available after app startup.
-            fetchDomainsOnStartup();
-            if (domainsData == null || domainsData.isEmpty()) {
-                String errorMsg = "Domains data is not available. Service may not be properly initialized.";
-                log.error(errorMsg);
-                throw new EventTrackerException(errorMsg);
-            }
+            throw new EventTrackerException(
+                    "Domains data is not available. This should not happen — startup validation should have caught this.");
         }
 
         try {
