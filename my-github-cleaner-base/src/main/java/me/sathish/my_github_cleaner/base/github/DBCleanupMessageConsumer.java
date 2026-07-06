@@ -1,7 +1,6 @@
 package me.sathish.my_github_cleaner.base.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.config.RabbitSchemaConfig;
@@ -10,6 +9,11 @@ import me.sathish.my_github_cleaner.base.repositories.RepositoriesRepository;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_DELETED;
+import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_DELETED_FROM_DB;
 
 @Service
 @Slf4j
@@ -28,7 +32,7 @@ public class DBCleanupMessageConsumer {
     }
 
     /*
-    {"id":null,"eventId":"a07968f2-4bbf-42eb-8853-0b09b18ee5e8","eventType":"GITHUB_REPOSITORY_PROJECT","payload":"Failed to delete repository
+    {"id":null,"eventId":"a07968f2-4bbf-42eb-8853-0b09b18ee5e8","eventType":"GITHUB_REPOSITORY_DELETED","payload":"Failed to delete repository
     {\"Repo Record ID\":\"10007\",\"repositoryName\":\"gjhj\",\"deletedAt\":\"2025-09-14T08:52:25.167003\",\"deletedBy\":\"sathishjayapal\"}","createdBy":"sathishjayapal","updatedBy":"sathishjayapal","domain":10093}
      */
     @RabbitListener(queues = RabbitSchemaConfig.GITHUB_CLEANUP_QUEUE)
@@ -41,7 +45,7 @@ public class DBCleanupMessageConsumer {
                     eventMessage.getEventType(),
                     eventMessage.getDomain());
 
-            if (eventMessage.getEventType().equals("GITHUB_REPOSITORY_PROJECT")) {
+            if (eventMessage.getEventType().equals(GITHUB_REPOSITORY_DELETED)) {
                 RepositoryPayload payload = objectMapper.readValue(
                         extractJsonFromPayload(eventMessage.getPayload()), RepositoryPayload.class);
                 log.info(
@@ -52,7 +56,7 @@ public class DBCleanupMessageConsumer {
                 if (payload.getRepoRecordId() != null) {
                     repositoriesRepository.deleteById(Long.parseLong(payload.getRepoRecordId()));
                     String eventPayload = createEventPayload(payload);
-                    eventTrackerService.sendGitHubEventToEventstracker(eventPayload);
+                    eventTrackerService.sendGitHubEventToEventstracker(eventPayload, GITHUB_REPOSITORY_DELETED_FROM_DB);
                 }
             }
         } catch (Exception e) {

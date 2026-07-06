@@ -1,13 +1,10 @@
 package me.sathish.my_github_cleaner.base.github;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +12,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class GitHubService implements GitHubServiceConstants {
@@ -25,12 +30,21 @@ public class GitHubService implements GitHubServiceConstants {
     private static final String AUTH_USER_REPOS_PATH = "/user/repos";
     private final Environment environment;
     private final RestTemplate restTemplate;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
     private final String githubToken;
 
+    @Autowired
     public GitHubService(Environment environment) {
+        this(environment, new RestTemplate(), HttpClient.newHttpClient());
+    }
+
+    GitHubService(Environment environment, RestTemplate restTemplate, HttpClient httpClient) {
         this.environment = environment;
         this.githubToken = environment.getProperty(GITHUB_TOKEN_KEY);
-        this.restTemplate = new RestTemplate();
+        this.restTemplate = restTemplate;
+        this.httpClient = httpClient;
+        this.objectMapper = new ObjectMapper();
     }
 
     // Fetch a specific repository for the authenticated user
@@ -82,6 +96,83 @@ public class GitHubService implements GitHubServiceConstants {
 
             return Optional.empty();
         }
+    }
+
+    /**
+     * Update the description of a GitHub repository.
+     * Tries the authenticated user's repository first, then falls back to the configured organization.
+     *
+     * @param repoName    the repository name to update
+     * @param description the new description to set
+     * @return true if the GitHub API returned a 2xx response, false otherwise
+     */
+    public boolean updateRepository(String repoName, String description) {
+        validateToken();
+        String username = environment.getProperty(GITHUB_USERNAME_KEY);
+        String orgName = environment.getProperty(GITHUB_ORG_KEY);
+        if (username == null || username.isEmpty()) {
+            throw new RuntimeException("GitHub username is not configured");
+        }
+
+        String url = String.format("%s/repos/%s/%s", GITHUB_API_BASE_URL, username, repoName);
+        String orgUrl = orgName != null && !orgName.isEmpty()
+                ? String.format("%s/repos/%s/%s", GITHUB_API_BASE_URL, orgName, repoName)
+                : null;
+
+        Map<String, String> body = new HashMap<>();
+        body.put("description", description);
+        String jsonBody;
+        try {
+            jsonBody = objectMapper.writeValueAsString(body);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize request body", e);
+        }
+
+        try {
+            log.debug("Updating repository description: {}", url);
+            HttpResponse<String> response = httpClient.send(
+                    buildPatchRequest(url, jsonBody), HttpResponse.BodyHandlers.ofString());
+            if (is2xxSuccessful(response)) {
+                return true;
+            }
+            log.error("Failed to update user repository {}: HTTP {} - Response: {}", repoName, response.statusCode(), response.body());
+            return tryOrgUpdate(repoName, orgUrl, jsonBody);
+        } catch (Exception e) {
+            log.error("Failed to update user repository {}: {}", repoName, e.getMessage(), e);
+            return tryOrgUpdate(repoName, orgUrl, jsonBody);
+        }
+    }
+
+    private boolean tryOrgUpdate(String repoName, String orgUrl, String jsonBody) {
+        if (orgUrl == null || orgUrl.isEmpty()) {
+            return false;
+        }
+        try {
+            log.debug("Trying organization repository update: {}", orgUrl);
+            HttpResponse<String> orgResponse =
+                    httpClient.send(buildPatchRequest(orgUrl, jsonBody), HttpResponse.BodyHandlers.ofString());
+            if (!is2xxSuccessful(orgResponse)) {
+                log.error("Failed to update organization repository {}: HTTP {} - Response: {}", repoName, orgResponse.statusCode(), orgResponse.body());
+            }
+            return is2xxSuccessful(orgResponse);
+        } catch (Exception orgException) {
+            log.error("Failed to update organization repository {}: {}", repoName, orgException.getMessage(), orgException);
+            return false;
+        }
+    }
+
+    private HttpRequest buildPatchRequest(String url, String jsonBody) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "application/vnd.github.v3+json")
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + githubToken)
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+    }
+
+    private boolean is2xxSuccessful(HttpResponse<String> response) {
+        return response != null && response.statusCode() >= 200 && response.statusCode() < 300;
     }
 
     public List<GitHubRepository> fetchAllPublicRepositoriesForUser(String username) {

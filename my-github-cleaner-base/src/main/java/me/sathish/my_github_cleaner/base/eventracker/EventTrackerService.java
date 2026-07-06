@@ -4,6 +4,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import me.sathish.my_github_cleaner.base.config.RabbitMQConfiguration;
+import me.sathish.my_github_cleaner.base.util.RabbitConfigProperties;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -14,15 +24,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import me.sathish.my_github_cleaner.base.config.RabbitMQConfiguration;
-import me.sathish.my_github_cleaner.base.util.RabbitConfigProperties;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
+
+import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_PROJECT;
 
 @Service
 @Slf4j
@@ -149,9 +152,24 @@ public class EventTrackerService {
      * @throws IllegalArgumentException if payLoad is null or empty
      */
     public void sendGitHubEventToEventstracker(String payLoad) {
+        sendGitHubEventToEventstracker(payLoad, GITHUB_REPOSITORY_PROJECT);
+    }
+
+    /**
+     * Send an event to the Eventstracker service with a specific event type.
+     *
+     * @param payLoad   The payload associated with the event.
+     * @param eventType The event type to use.
+     * @throws EventTrackerException    if the event cannot be sent
+     * @throws IllegalArgumentException if payLoad is null or empty
+     */
+    public void sendGitHubEventToEventstracker(String payLoad, String eventType) {
         // Input validation
         if (payLoad == null || payLoad.trim().isEmpty()) {
             throw new IllegalArgumentException("Payload cannot be null or empty");
+        }
+        if (eventType == null || eventType.trim().isEmpty()) {
+            throw new IllegalArgumentException("Event type cannot be null or empty");
         }
 
         if (domainsData == null || domainsData.isEmpty()) {
@@ -160,7 +178,7 @@ public class EventTrackerService {
         }
 
         try {
-            DomainEventDTO eventDTO = createEventDTO(payLoad);
+            DomainEventDTO eventDTO = createEventDTO(payLoad, eventType);
             String jsonPayload = objectMapper.writeValueAsString(eventDTO);
 
             log.info("Sending GitHub event to EventTracker. Event ID: {}", eventDTO.getEventId());
@@ -182,12 +200,12 @@ public class EventTrackerService {
     }
 
     /**
-     * Creates a DomainEventDTO from the given payload.
+     * Creates a DomainEventDTO from the given payload and event type.
      */
-    private DomainEventDTO createEventDTO(String payLoad) {
+    private DomainEventDTO createEventDTO(String payLoad, String eventType) {
         DomainEventDTO eventDTO = new DomainEventDTO();
         eventDTO.setEventId(UUID.randomUUID().toString());
-        eventDTO.setEventType("GITHUB_REPOSITORY_PROJECT");
+        eventDTO.setEventType(eventType);
         eventDTO.setPayload(payLoad);
         eventDTO.setCreatedBy(environment.getProperty("githubusername", "system"));
         eventDTO.setUpdatedBy(environment.getProperty("githubusername", "system"));

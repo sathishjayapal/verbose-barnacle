@@ -119,7 +119,7 @@ public class GitHubDeleter implements GitHubServiceConstants {
                     response.statusCode());
         }
         String eventPayload = createEventPayload(repositoryName, username, isSuccess, repoRecordID);
-        eventTrackerService.sendGitHubEventToEventstracker(eventPayload);
+        eventTrackerService.sendGitHubEventToEventstracker(eventPayload, GITHUB_REPOSITORY_DELETED);
     }
 
     private String createEventPayload(String repositoryName, String username, boolean isSuccess, Long repoRecordID) {

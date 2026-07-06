@@ -1,7 +1,10 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
 import lombok.extern.slf4j.Slf4j;
+import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.github.GitHubDeleter;
+import me.sathish.my_github_cleaner.base.github.GitHubService;
+import me.sathish.my_github_cleaner.base.github.GitHubServiceConstants;
 import me.sathish.my_github_cleaner.base.util.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -11,19 +14,28 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @Slf4j
-public class RepositoriesService {
+public class RepositoriesService implements GitHubServiceConstants {
 
     private final RepositoriesRepository repositoriesRepository;
     private final GitHubDeleter gitHubDeleter;
+    private final GitHubService gitHubService;
+    private final EventTrackerService eventTrackerService;
 
-    public RepositoriesService(final RepositoriesRepository repositoriesRepository, GitHubDeleter gitHubDeleter) {
+    public RepositoriesService(
+            final RepositoriesRepository repositoriesRepository,
+            GitHubDeleter gitHubDeleter,
+            GitHubService gitHubService,
+            EventTrackerService eventTrackerService) {
         this.repositoriesRepository = repositoriesRepository;
         this.gitHubDeleter = gitHubDeleter;
+        this.gitHubService = gitHubService;
+        this.eventTrackerService = eventTrackerService;
     }
 
     public Boolean countByRecords() {
@@ -95,6 +107,28 @@ public class RepositoriesService {
         final Repositories repositories = repositoriesRepository.findById(id).orElseThrow(NotFoundException::new);
         mapToEntity(repositoriesDTO, repositories);
         repositoriesRepository.save(repositories);
+
+        boolean githubUpdated = false;
+        try {
+            githubUpdated = gitHubService.updateRepository(repositories.getRepoName(), repositories.getDescription());
+        } catch (RuntimeException e) {
+            log.warn("Failed to update repository description on GitHub: {}", e.getMessage());
+        }
+        String eventPayload = String.format(
+                "%s{\"repoRecordId\":\"%s\",\"repositoryName\":\"%s\",\"description\":\"%s\",\"updatedAt\":\"%s\",\"updatedBy\":\"%s\"}",
+                githubUpdated
+                        ? "Repository description updated on GitHub"
+                        : "Failed to update repository description on GitHub",
+                id,
+                repositories.getRepoName(),
+                repositories.getDescription(),
+                LocalDateTime.now(),
+                SYSTEM_USER);
+        try {
+            eventTrackerService.sendGitHubEventToEventstracker(eventPayload, GITHUB_REPOSITORY_UPDATED);
+        } catch (Exception e) {
+            log.warn("Failed to send GitHub update event to EventTracker: {}", e.getMessage());
+        }
     }
 
     public void delete(final Long id) {
