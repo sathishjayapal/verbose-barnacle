@@ -1,6 +1,8 @@
 package me.sathish.my_github_cleaner.base.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import me.sathish.my_github_cleaner.base.eventracker.EventTrackerException;
+import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,23 +35,60 @@ public class GitHubService implements GitHubServiceConstants {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final String githubToken;
+    private final EventTrackerService eventTrackerService;
+    private Set<String> tokenScopes;
 
     @Autowired
-    public GitHubService(Environment environment) {
-        this(environment, new RestTemplate(), HttpClient.newHttpClient());
+    public GitHubService(Environment environment, EventTrackerService eventTrackerService) {
+        this(environment, new RestTemplate(), HttpClient.newHttpClient(), eventTrackerService);
     }
 
+    GitHubService(Environment environment, RestTemplate restTemplate, HttpClient httpClient, EventTrackerService eventTrackerService) {
+        this.environment = environment;
+        this.githubToken = environment.getProperty(GITHUB_TOKEN_KEY);
+        this.restTemplate = restTemplate;
+        this.httpClient = httpClient;
+        this.objectMapper = new ObjectMapper();
+        this.eventTrackerService = eventTrackerService;
+        initializeTokenScopes();
+    }
+
+    // Backward-compatible constructor for tests
     GitHubService(Environment environment, RestTemplate restTemplate, HttpClient httpClient) {
         this.environment = environment;
         this.githubToken = environment.getProperty(GITHUB_TOKEN_KEY);
         this.restTemplate = restTemplate;
         this.httpClient = httpClient;
         this.objectMapper = new ObjectMapper();
+        this.eventTrackerService = null;
+        initializeTokenScopes();
+    }
+
+    private void initializeTokenScopes() {
+        if (githubToken != null && !githubToken.isEmpty()) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(GITHUB_API_BASE_URL + "/user"))
+                        .header("Authorization", "Bearer " + githubToken)
+                        .GET()
+                        .build();
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                String scopes = response.headers().firstValue("X-OAuth-Scopes").orElse("");
+                tokenScopes = Arrays.stream(scopes.split(",")).map(String::trim).collect(java.util.stream.Collectors.toSet());
+                log.info("GitHub token scopes: {}", tokenScopes);
+            } catch (Exception e) {
+                log.warn("Failed to fetch token scopes: {}", e.getMessage());
+                tokenScopes = new HashSet<>();
+            }
+        } else {
+            tokenScopes = new HashSet<>();
+        }
     }
 
     // Fetch a specific repository for the authenticated user
     public Optional<GitHubRepository> getAuthenticatedUserRepository(String repoName) {
         validateToken();
+        ensureScope("public_repo", "fetch repository");
         String username = environment.getProperty(GITHUB_USERNAME_KEY);
         String orgName = environment.getProperty(GITHUB_ORG_KEY);
         if (username == null || username.isEmpty()) {
@@ -108,6 +147,7 @@ public class GitHubService implements GitHubServiceConstants {
      */
     public boolean updateRepository(String repoName, String description) {
         validateToken();
+        ensureScope("repo", "update repository description");
         String username = environment.getProperty(GITHUB_USERNAME_KEY);
         String orgName = environment.getProperty(GITHUB_ORG_KEY);
         if (username == null || username.isEmpty()) {
@@ -145,10 +185,11 @@ public class GitHubService implements GitHubServiceConstants {
 
     private boolean tryOrgUpdate(String repoName, String orgUrl, String jsonBody) {
         if (orgUrl == null || orgUrl.isEmpty()) {
+            log.error("No organization URL configured for repo {}, skipping org update", repoName);
             return false;
         }
         try {
-            log.debug("Trying organization repository update: {}", orgUrl);
+            log.error("Trying organization repository update for {} at URL: {}", repoName, orgUrl);
             HttpResponse<String> orgResponse =
                     httpClient.send(buildPatchRequest(orgUrl, jsonBody), HttpResponse.BodyHandlers.ofString());
             if (!is2xxSuccessful(orgResponse)) {
@@ -176,6 +217,8 @@ public class GitHubService implements GitHubServiceConstants {
     }
 
     public List<GitHubRepository> fetchAllPublicRepositoriesForUser(String username) {
+        validateToken();
+        ensureScope("public_repo", "fetch all repositories");
         HttpHeaders headers = new HttpHeaders();
         setAuthorizationHeader(headers);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -238,5 +281,35 @@ public class GitHubService implements GitHubServiceConstants {
         if (githubToken == null || githubToken.isEmpty()) {
             throw new RuntimeException(TOKEN_REQUIRED_ERROR);
         }
+    }
+
+    /**
+     * Ensures the GitHub token has the required scope for the specified operation.
+     * If the scope is missing, logs the error, sends an event to EventTracker, and throws an exception.
+     *
+     * @param requiredScope the required GitHub token scope (e.g., "repo", "public_repo")
+     * @param operation     the operation being attempted (for error messaging)
+     */
+    private void ensureScope(String requiredScope, String operation) {
+        if (tokenScopes.contains(requiredScope)) {
+            return;
+        }
+
+        String errorMsg = String.format("GitHub token lacks required '%s' scope for operation: %s. Current scopes: %s",
+                requiredScope, operation, tokenScopes);
+        log.error(errorMsg);
+
+        // Send event about token scope issue
+        if (eventTrackerService != null) {
+            try {
+                String payload = String.format("{\"issue\":\"token_scope_missing\",\"required_scope\":\"%s\",\"operation\":\"%s\",\"current_scopes\":\"%s\"}",
+                        requiredScope, operation, String.join(",", tokenScopes));
+                eventTrackerService.sendGitHubEventToEventstracker(payload, GITHUB_TOKEN_ISSUE);
+            } catch (EventTrackerException e) {
+                log.warn("Failed to send token scope event: {}", e.getMessage());
+            }
+        }
+
+        throw new RuntimeException(errorMsg);
     }
 }
