@@ -310,6 +310,6 @@ public class GitHubService implements GitHubServiceConstants {
             }
         }
 
-        throw new RuntimeException(errorMsg);
+//        throw new RuntimeException(errorMsg);
     }
 }
