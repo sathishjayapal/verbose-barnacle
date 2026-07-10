@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useSearchParams } from 'react-router';
-import { handleServerError, getListParams } from 'app/common/utils';
-import { RepositoriesDTO } from 'app/repositories/repositories-model';
-import { PagedModel, Pagination } from 'app/common/list-helper/pagination';
+import React, {useEffect, useState} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
+import {Link, useNavigate, useSearchParams} from 'react-router';
+import {getListParams, handleServerError} from 'app/common/utils';
+import {RepositoriesDTO} from 'app/repositories/repositories-model';
+import {PagedModel, Pagination} from 'app/common/list-helper/pagination';
 import axios from 'axios';
 import SearchFilter from 'app/common/list-helper/search-filter';
 import Sorting from 'app/common/list-helper/sorting';
 import useDocumentTitle from 'app/common/use-document-title';
-import { getAuthConfig, getBasicAuthHeader } from 'app/config/auth-config';
-
+import {getAuthConfig, getBasicAuthHeader} from 'app/config/auth-config';
 
 
 export default function RepositoriesList() {
@@ -65,8 +64,10 @@ export default function RepositoriesList() {
   }, [searchParams]);
 
   return (<>
+    <h1 className="grow text-3xl md:text-4xl font-medium mb-4">{t('landing.headline')}</h1>
+    <p className="mb-8 text-gray-600"><Trans i18nKey="landing.text" components={{a: <a/>, strong: <strong/>}}/></p>
     <div className="flex flex-wrap mb-6">
-      <h1 className="grow text-3xl md:text-4xl font-medium mb-2">{t('repositories.list.headline')}</h1>
+      <h2 className="grow text-2xl md:text-3xl font-medium mb-2">{t('repositories.list.headline')}</h2>
       <div>
         <Link to="/repositories/add" className="inline-block text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-300  focus:ring-4 rounded px-5 py-2">{t('repositories.list.createNew')}</Link>
       </div>

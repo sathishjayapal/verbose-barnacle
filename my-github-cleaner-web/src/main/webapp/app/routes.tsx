@@ -1,7 +1,6 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import {createBrowserRouter, RouterProvider} from 'react-router';
 import App from "./app";
-import Home from './home/home';
 import RepositoriesList from './repositories/repositories-list';
 import RepositoriesAdd from './repositories/repositories-add';
 import RepositoriesEdit from './repositories/repositories-edit';
@@ -13,7 +12,7 @@ export default function AppRoutes() {
     {
       element: <App />,
       children: [
-        { path: '', element: <Home /> },
+        {path: '', element: <RepositoriesList/>},
         { path: 'repositories', element: <RepositoriesList /> },
         { path: 'repositories/add', element: <RepositoriesAdd /> },
         { path: 'repositories/edit/:id', element: <RepositoriesEdit /> },
