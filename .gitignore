@@ -46,3 +46,4 @@ build/
 !**/src/test/**/build/
 /package-lock.json
 logs/
+/.env.example

@@ -2,8 +2,18 @@ services:
   postgres:
     image: postgres:17.5
     environment:
-    - POSTGRES_DB=my-github-cleaner
-    - POSTGRES_USER=postgres
-    - POSTGRES_PASSWORD=P4ssword!
+      - POSTGRES_DB=${GITHUB_CLEANER_DB_NAME:-my-github-cleaner}
+      - POSTGRES_USER=${GITHUB_CLEANER_DB_USER:?set in .env (see .env.example)}
+      - POSTGRES_PASSWORD=${GITHUB_CLEANER_DB_PASSWORD:?set in .env (see .env.example)}
     ports:
-    - 5439:5432
+      - 5439:5432
+    volumes:
+      - github_cleaner_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${GITHUB_CLEANER_DB_USER} -d ${GITHUB_CLEANER_DB_NAME:-my-github-cleaner}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  github_cleaner_pg_data:
