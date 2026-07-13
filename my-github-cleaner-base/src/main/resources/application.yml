@@ -38,5 +38,5 @@ logging:
 
 sathishlogger:
   enabled: ${SATHISHLOGGER_ENABLED:false}
-  url: ${SATHISHLOGGER_URL:http://localhost:8080}
-  application-name: ${SATHISHLOGGER_APP_NAME:my-app}
+  url: ${SATHISHLOGGER_URL}
+  application-name: ${SATHISHLOGGER_APP_NAME}
