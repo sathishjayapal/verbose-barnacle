@@ -29,13 +29,32 @@ EventTracker service via RabbitMQ and uses Spring Cloud Config for externalized 
 
 ### 1. Environment
 
-Copy the `.env` template in `my-github-cleaner-base/` and fill in your values:
+Copy the `.env.example` template at the repo root and fill in your values:
 
 ```bash
-cp my-github-cleaner-base/.env.template my-github-cleaner-base/.env
+cp .env.example .env
+ln -s ../.env my-github-cleaner-base/.env
 ```
 
-Key variables: `GITHUB_TOKEN`, `JDBC_DATABASE_URL`, `RABBITMQ_HOST`, `CONFIG_SERVER_URL`.
+The symlink matters because Spring resolves `.env` relative to whatever
+directory the app is actually run from: the CLI command below runs from the
+repo root, but IntelliJ run configurations that target `MyGithubCleanerApplication`
+directly default to `my-github-cleaner-base/` as the working directory. Both
+need to see the same file, or the two setups will silently use different
+config (that's how this drifted before) — don't recreate
+`my-github-cleaner-base/.env` as a separate copy.
+
+Key variables: `GITHUB_TOKEN`, `GITHUB_CLEANER_DB_URL`, `RABBITMQ_HOST`,
+`EVENTSTRACKER_URL`/`eventstracker_username`/`eventstracker_password`,
+`SATHISHLOGGER_URL`, `CONFIG_SERVER_URL`. See `.env.example` for the full list
+and important notes on each.
+
+**`CONFIG_SERVER_URL`, `SPRING_CLOUD_CONFIG_USERNAME`, and
+`SPRING_CLOUD_CONFIG_PASSWORD` must be real shell/IDE environment variables**,
+not just present in `.env` — Spring Boot resolves the config-server import
+location before this file's properties are available, so a value that only
+lives in `.env` won't resolve in time. Export them in your shell profile or
+your IDE run configuration.
 
 ### 2. Start Infrastructure
 
@@ -51,8 +70,12 @@ Use the `local` profile. In IntelliJ add `-Dspring.profiles.active=local` to VM 
 `my-github-cleaner-web` as the classpath.
 
 ```bash
-./mvnw spring-boot:run -pl my-github-cleaner-web -Dspring-boot.run.profiles=local
+./mvnw spring-boot:run -pl my-github-cleaner-web -am -Dspring-boot.run.profiles=local
 ```
+
+`-am` ("also make") builds `my-github-cleaner-base` first — without it Maven
+fails with a dependency-resolution error since the base module's jar isn't
+in the local repo yet.
 
 ### 4. Run the Frontend Dev Server
 
