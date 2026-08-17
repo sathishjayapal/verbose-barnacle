@@ -9,6 +9,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.config.RabbitMQConfiguration;
 import me.sathish.my_github_cleaner.base.util.RabbitConfigProperties;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -243,12 +245,23 @@ public class EventTrackerService {
 
             log.debug("Sending message to RabbitMQ exchange: {}, routing key: {}", exchange, routingKey);
 
-            // Payload must be a JSON string, not the raw DomainEventDTO object — a raw object makes
-            // JacksonJsonMessageConverter stamp a __TypeId__ header with this class's FQN
-            // (me.sathish.my_github_cleaner...DomainEventDTO), which eventstracker (a different JAR,
-            // consuming with its own DomainEventDTO type) can't resolve on its classpath. The message
-            // is then silently rejected on eventstracker's side with no error visible here.
-            rabbitTemplate.convertAndSend(exchange, routingKey, objectMapper.writeValueAsString(eventDTO));
+            // Must bypass RabbitTemplate's converter entirely via send(), not convertAndSend().
+            // Passing the raw DomainEventDTO object lets JacksonJsonMessageConverter stamp a
+            // __TypeId__ header with this class's FQN, which eventstracker (a different JAR, with
+            // its own DomainEventDTO class) can't resolve — message rejected before its listener
+            // ever runs. Passing a pre-serialized JSON String to convertAndSend does NOT avoid this
+            // either: the same converter re-serializes whatever object it's given, including a
+            // String, so the JSON gets double-encoded on the wire (confirmed live against
+            // eventstracker 2026-08-17). Building the Message by hand and calling send() guarantees
+            // the wire bytes are the exact, single-encoded JSON with no extra wrapping and no
+            // __TypeId__ header — verified live to deserialize correctly into eventstracker's typed
+            // DomainEventDTO listener parameter with no header needed at all.
+            byte[] body = objectMapper.writeValueAsString(eventDTO).getBytes(StandardCharsets.UTF_8);
+            Message message = MessageBuilder.withBody(body)
+                    .setContentType("application/json")
+                    .setContentEncoding(StandardCharsets.UTF_8.name())
+                    .build();
+            rabbitTemplate.send(exchange, routingKey, message);
         } catch (Exception e) {
             String errorMsg = "Failed to send messages to RabbitMQ: " + e.getMessage();
             log.error(errorMsg, e);
