@@ -243,7 +243,12 @@ public class EventTrackerService {
 
             log.debug("Sending message to RabbitMQ exchange: {}, routing key: {}", exchange, routingKey);
 
-            rabbitTemplate.convertAndSend(exchange, routingKey, eventDTO);
+            // Payload must be a JSON string, not the raw DomainEventDTO object — a raw object makes
+            // JacksonJsonMessageConverter stamp a __TypeId__ header with this class's FQN
+            // (me.sathish.my_github_cleaner...DomainEventDTO), which eventstracker (a different JAR,
+            // consuming with its own DomainEventDTO type) can't resolve on its classpath. The message
+            // is then silently rejected on eventstracker's side with no error visible here.
+            rabbitTemplate.convertAndSend(exchange, routingKey, objectMapper.writeValueAsString(eventDTO));
         } catch (Exception e) {
             String errorMsg = "Failed to send messages to RabbitMQ: " + e.getMessage();
             log.error(errorMsg, e);
