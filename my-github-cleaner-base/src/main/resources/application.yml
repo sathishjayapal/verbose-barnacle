@@ -1,6 +1,6 @@
 spring:
   application:
-    name: my-github-cleaner
+    name: my-github-cleaner_
   config:
     import:
       - optional:file:.env[.properties]
