@@ -1,6 +1,11 @@
+# Standalone DB compose for verbose-barnacle (my-github-cleaner) — values match the
+# `github-cleaner-db` service that consolidated-postgres/scripts/vm/vm-db-up.sh generates
+# (see scripts/lib/project-config.sh).
+#   docker compose up -d
 services:
   postgres:
-    image: postgres:17.5
+    container_name: github-cleaner-db
+    image: postgres:16.15
     environment:
       - POSTGRES_DB=${GITHUB_CLEANER_DB_NAME:-my-github-cleaner}
       - POSTGRES_USER=${GITHUB_CLEANER_DB_USER:?set in .env (see .env.example)}
