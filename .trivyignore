@@ -1,0 +1,7 @@
+# Spring Framework CRITICALs in spring-webmvc/spring-webflux.
+# Fixed only in Spring Framework 7.0.9+ (i.e. requires the Spring Boot 4
+# migration). No patch exists on the 6.2.x line as of Spring Boot 3.5.16 —
+# revisit when upgrading to Spring Boot 4.x.
+CVE-2026-47884
+CVE-2026-47890
+CVE-2026-47892
