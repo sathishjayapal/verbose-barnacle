@@ -9,7 +9,6 @@ import axios from 'axios';
 import InputRow from 'app/common/input-row/input-row';
 import useDocumentTitle from 'app/common/use-document-title';
 import * as yup from 'yup';
-import { getBasicAuthHeader } from 'app/config/auth-config';
 
 
 function getSchema() {
@@ -44,8 +43,7 @@ export default function RepositoriesEdit() {
 
   const prepareForm = async () => {
       try {
-      const response = await axios.get('/api/repositories/' + currentId,
-          { headers: { authorization: getBasicAuthHeader()}});
+      const response = await axios.get('/api/repositories/' + currentId);
       useFormResult.reset(response.data);
     } catch (error: any) {
       handleServerError(error, navigate);
@@ -59,8 +57,7 @@ export default function RepositoriesEdit() {
   const updateRepositories = async (data: RepositoriesDTO) => {
     window.scrollTo(0, 0);
     try {
-      await axios.put('/api/repositories/' + currentId, data,
-          { headers: { authorization: getBasicAuthHeader() } });
+      await axios.put('/api/repositories/' + currentId, data);
       navigate('/repositories', {
             state: {
               msgSuccess: t('repositories.update.success')

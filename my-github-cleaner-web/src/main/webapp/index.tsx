@@ -22,6 +22,16 @@ i18n
   });
 
 axios.defaults.baseURL = process.env.API_PATH;
+axios.defaults.withCredentials = true;
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 const root = document.getElementById('root')!!;
 ReactDOM.createRoot(root).render(

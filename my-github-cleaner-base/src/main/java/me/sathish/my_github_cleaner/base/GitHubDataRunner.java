@@ -26,7 +26,6 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
     private final RepositoriesService repositoriesService;
     private final EventTrackerService eventTrackerService;
     private final Environment environment;
-    private final SathishLoggerClient logger;
 
     public GitHubDataRunner(
             GitHubService gitHubService,
@@ -37,17 +36,8 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
         this.repositoriesService = repositoriesService;
         this.eventTrackerService = eventTrackerService;
         this.environment = environment;
-        this.logger = createLogger(environment);
         String correlationId = UUID.randomUUID().toString();
-        logger.info("Processing request", correlationId);
-    }
-
-    private SathishLoggerClient createLogger(Environment environment) {
-        String loggerUrl = environment.getProperty("sathishlogger.url", "http://localhost:8080");
-        String appName = environment.getProperty("sathishlogger.application-name", "my-app");
-        String apiKey = environment.getProperty("sathishlogger.api-key");
-        boolean enabled = Boolean.parseBoolean(environment.getProperty("sathishlogger.enabled", "true"));
-        return new SathishLoggerClient(loggerUrl, appName, apiKey, enabled);
+        log.atInfo().addKeyValue("correlationId", correlationId).log("Processing request");
     }
 
     /**
@@ -58,7 +48,7 @@ public class GitHubDataRunner implements CommandLineRunner, GitHubServiceConstan
      */
     @Scheduled(fixedDelay = 86400000L)
     private Set<String> findMissingRepositories() {
-        logger.info("Application started");
+        log.info("Application started");
         Set<String> githubRepoNames =
                 gitHubService.fetchAllPublicRepositoriesForUser(environment.getProperty(GITHUB_USERNAME_KEY)).stream()
                         .map(GitHubRepository::getName)

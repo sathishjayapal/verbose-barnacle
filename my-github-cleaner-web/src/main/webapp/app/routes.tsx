@@ -5,6 +5,7 @@ import RepositoriesList from './repositories/repositories-list';
 import RepositoriesAdd from './repositories/repositories-add';
 import RepositoriesEdit from './repositories/repositories-edit';
 import Error from './error/error';
+import Login from './login/login';
 
 
 export default function AppRoutes() {
@@ -13,6 +14,7 @@ export default function AppRoutes() {
       element: <App />,
       children: [
         {path: '', element: <RepositoriesList/>},
+        { path: 'login', element: <Login /> },
         { path: 'repositories', element: <RepositoriesList /> },
         { path: 'repositories/add', element: <RepositoriesAdd /> },
         { path: 'repositories/edit/:id', element: <RepositoriesEdit /> },

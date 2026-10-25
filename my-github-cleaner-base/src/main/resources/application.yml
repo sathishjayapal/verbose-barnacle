@@ -1,6 +1,6 @@
 spring:
   application:
-    name: my-github-cleaner_
+    name: my-github-cleaner
   config:
     import:
       - optional:file:.env[.properties]
@@ -35,8 +35,6 @@ logging:
     sun.rmi: WARN
     javax.management.remote.rmi: WARN
     java.net.http: WARN
-
-sathishlogger:
-  enabled: ${SATHISHLOGGER_ENABLED:false}
-  url: ${SATHISHLOGGER_URL}
-  application-name: ${SATHISHLOGGER_APP_NAME}
+  structured:
+    format:
+      console: logstash

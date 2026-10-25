@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface RepositoriesRepository extends JpaRepository<Repositories, Long> {
 
-    Page<Repositories> findAllById(Long id, Pageable pageable);
+    Page<Repositories> findAllByIdOrRepoNameContainingIgnoreCase(Long id, String repoName, Pageable pageable);
 
     boolean existsByRepoName(String repoName);
 

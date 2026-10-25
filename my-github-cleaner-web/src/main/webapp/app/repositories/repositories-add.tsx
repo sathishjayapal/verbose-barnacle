@@ -9,7 +9,6 @@ import axios from 'axios';
 import InputRow from 'app/common/input-row/input-row';
 import useDocumentTitle from 'app/common/use-document-title';
 import * as yup from 'yup';
-import { getAuthConfig } from 'app/config/auth-config';
 
 
 function getSchema() {
@@ -43,14 +42,7 @@ export default function RepositoriesAdd() {
   const createRepositories = async (data: RepositoriesDTO) => {
     window.scrollTo(0, 0);
     try {
-      console.error(data);
-      const authConfig = getAuthConfig();
-      await axios.post('/api/repositories', data, {
-        auth: {
-          username: authConfig.username,
-          password: authConfig.password
-        }
-      });
+      await axios.post('/api/repositories', data);
       navigate('/repositories', {
             state: {
               msgSuccess: t('repositories.create.success')
