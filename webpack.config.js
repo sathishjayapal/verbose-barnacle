@@ -35,7 +35,9 @@ module.exports = (env, argv) => ({
       filename: 'css/[name].css'
     }),
     new Dotenv({
-      path: argv.mode === 'production' ? '.env' : '.env.development'
+      path: argv.mode === 'production' ? '.env' : '.env.development',
+      silent: true,
+      systemvars: true
     }),
     new HtmlWebpackPlugin({
       template: './my-github-cleaner-web/src/main/webapp/index.html'
@@ -51,6 +53,7 @@ module.exports = (env, argv) => ({
     rules: [
       {
         test: /\.tsx?$/,
+        exclude: /\.(test|spec)\.tsx?$/,
         use: ['ts-loader']
       },
       {
