@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
-import axios from 'axios';
+import { useLocation, useNavigate } from 'react-router';
 import useDocumentTitle from 'app/common/use-document-title';
+import { useAuth } from 'app/common/auth-context';
 
 
 export default function Login() {
@@ -10,16 +10,20 @@ export default function Login() {
   useDocumentTitle(t('login.headline'));
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const login = async (event: React.FormEvent) => {
+  const doLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
     try {
-      await axios.post('/api/auth/login', { username, password });
-      navigate('/repositories');
+      await login(username, password);
+      // send the user back to the page they originally requested
+      const from = (location.state as { from?: string } | null)?.from;
+      navigate(from && from !== '/login' ? from : '/repositories');
     } catch {
       setError(t('login.failed'));
     }
@@ -29,7 +33,7 @@ export default function Login() {
     <div className="max-w-sm mx-auto mt-16">
       <h1 className="text-3xl md:text-4xl font-medium mb-6">{t('login.headline')}</h1>
       {error && <p className="bg-red-200 border-red-800 text-red-800 border rounded p-4 mb-6" role="alert">{error}</p>}
-      <form onSubmit={login} noValidate>
+      <form onSubmit={doLogin} noValidate>
         <div className="mb-4">
           <label htmlFor="username" className="block text-gray-600 mb-1">{t('login.username')}</label>
           <input id="username" type="text" value={username} required autoFocus

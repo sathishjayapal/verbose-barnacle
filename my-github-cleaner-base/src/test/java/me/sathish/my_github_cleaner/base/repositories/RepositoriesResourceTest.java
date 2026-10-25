@@ -1,16 +1,37 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import java.net.http.HttpResponse;
 import me.sathish.my_github_cleaner.base.config.BaseIT;
+import me.sathish.my_github_cleaner.base.github.GitHubDeleter;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 
 public class RepositoriesResourceTest extends BaseIT {
+
+    // The delete endpoint delegates the real GitHub API call to GitHubDeleter —
+    // mocked here so tests never hit api.github.com.
+    @MockitoBean
+    private GitHubDeleter gitHubDeleter;
+
+    @BeforeEach
+    void stubGitHubDelete() {
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> ok = mock(HttpResponse.class);
+        when(ok.statusCode()).thenReturn(204);
+        when(gitHubDeleter.deleteRepository(anyString(), anyLong())).thenReturn(ok);
+    }
 
     @Test
     @Sql("/data/repositoriesData.sql")

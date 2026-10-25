@@ -43,12 +43,14 @@ public class RepositoriesResource {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Long> createRepositories(@RequestBody @Valid final RepositoriesDTO repositoriesDTO) {
         final Long createdId = repositoriesService.create(repositoriesDTO);
         return new ResponseEntity<>(createdId, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Long> updateRepositories(
             @PathVariable(name = "id") final Long id, @RequestBody @Valid final RepositoriesDTO repositoriesDTO) {
         repositoriesService.update(id, repositoriesDTO);
@@ -56,6 +58,7 @@ public class RepositoriesResource {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteRepositories(@PathVariable(name = "id") final Long id) {
         repositoriesService.delete(id);
         return ResponseEntity.noContent().build();

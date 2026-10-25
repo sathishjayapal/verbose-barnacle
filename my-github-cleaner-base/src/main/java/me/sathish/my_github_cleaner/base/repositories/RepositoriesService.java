@@ -135,6 +135,13 @@ public class RepositoriesService implements GitHubServiceConstants {
         Repositories repository = repositoriesRepository.findById(id).orElseThrow(NotFoundException::new);
         mapToDTO(repository, repositoriesDTO);
         HttpResponse<String> response = gitHubDeleter.deleteRepository(repositoriesDTO.getRepoName(), id);
+        if (response != null && response.statusCode() == 204) {
+            // The MQ consumer (DBCleanupMessageConsumer) also removes the row when
+            // the deletion event flows back — deleting here keeps the API
+            // deterministic when no broker is connected; deleteById on an already
+            // removed row is a no-op there.
+            repositoriesRepository.deleteById(id);
+        }
     }
 
     private RepositoriesDTO mapToDTO(final Repositories repositories, final RepositoriesDTO repositoriesDTO) {

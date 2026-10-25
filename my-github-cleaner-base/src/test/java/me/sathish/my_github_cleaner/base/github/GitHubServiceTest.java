@@ -39,6 +39,9 @@ public class GitHubServiceTest {
                 .when(environment.getProperty(GitHubServiceConstants.GITHUB_USERNAME_KEY))
                 .thenReturn("testuser");
         gitHubService = new GitHubService(environment, new RestTemplate(), httpClient);
+        // The constructor performs a /user scope lookup via httpClient.send —
+        // discard that invocation so tests only verify the call they exercise.
+        clearInvocations(httpClient);
     }
 
     @Test

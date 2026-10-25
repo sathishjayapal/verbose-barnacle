@@ -2,9 +2,11 @@ spring:
   application:
     name: my-github-cleaner
   config:
+    # optional: prefix — the app starts fine without a reachable config server
+    # (e.g. CI test contexts); all required properties come from .env / env vars.
     import:
       - optional:file:.env[.properties]
-      - configserver:${CONFIG_SERVER_URL}
+      - optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
   cloud:
     config:
       username: ${SPRING_CLOUD_CONFIG_USERNAME}

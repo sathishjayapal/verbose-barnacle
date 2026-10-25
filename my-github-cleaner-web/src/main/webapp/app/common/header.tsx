@@ -1,20 +1,17 @@
 import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { useAuth } from 'app/common/auth-context';
 
 
 export default function Header() {
   const { t } = useTranslation();
   const headerRef = useRef<HTMLElement|null>(null);
   const navigate = useNavigate();
+  const { user, isAdmin, logout } = useAuth();
 
-  const logout = async () => {
-    try {
-      await axios.post('/api/auth/logout');
-    } catch {
-      // session may already be gone - still navigate to login
-    }
+  const doLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -57,23 +54,35 @@ export default function Header() {
             </div>
           </button>
           <div className="hidden md:block flex grow md:grow-0 justify-end basis-full md:basis-auto pt-3 md:pt-1 pb-1" id="navbarToggle">
-            <ul className="flex">
-              <li>
-                <Link to="/" className="block text-gray-500 p-2">{t('navigation.home')}</Link>
-              </li>
-              <li className="relative">
-                <button type="button" className="js-dropdown block text-gray-500 p-2 cursor-pointer" id="navbarEntitiesLink"
-                    aria-expanded="false">
-                  <span>{t('navigation.entities')}</span>
-                  <span className="text-[9px] align-[3px] pl-0.5">&#9660;</span>
-                </button>
-                <ul className="hidden block absolute right-0 bg-white border border-gray-300 rounded min-w-[10rem] py-2" aria-labelledby="navbarEntitiesLink">
-                  <li><Link to="/repositories" className="inline-block w-full hover:bg-gray-200 px-4 py-1">{t('repositories.list.headline')}</Link></li>
-                </ul>
-              </li>
-              <li>
-                <button type="button" onClick={logout} className="block text-gray-500 p-2 cursor-pointer">{t('navigation.logout')}</button>
-              </li>
+            <ul className="flex items-center">
+              {user && <>
+                <li>
+                  <Link to="/" className="block text-gray-500 p-2">{t('navigation.home')}</Link>
+                </li>
+                <li className="relative">
+                  <button type="button" className="js-dropdown block text-gray-500 p-2 cursor-pointer" id="navbarEntitiesLink"
+                      aria-expanded="false">
+                    <span>{t('navigation.entities')}</span>
+                    <span className="text-[9px] align-[3px] pl-0.5">&#9660;</span>
+                  </button>
+                  <ul className="hidden block absolute right-0 bg-white border border-gray-300 rounded min-w-[10rem] py-2" aria-labelledby="navbarEntitiesLink">
+                    <li><Link to="/repositories" className="inline-block w-full hover:bg-gray-200 px-4 py-1">{t('repositories.list.headline')}</Link></li>
+                    {isAdmin &&
+                      <li><Link to="/repositories/add" className="inline-block w-full hover:bg-gray-200 px-4 py-1">{t('repositories.add.headline')}</Link></li>}
+                  </ul>
+                </li>
+                <li className="px-2 py-2 text-xs text-gray-400 self-center">
+                  {user.username}
+                  <span className="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-gray-600">{isAdmin ? 'ADMIN' : 'VIEWER'}</span>
+                </li>
+                <li>
+                  <button type="button" onClick={doLogout} className="block text-gray-500 p-2 cursor-pointer">{t('navigation.logout')}</button>
+                </li>
+              </>}
+              {!user &&
+                <li>
+                  <Link to="/login" className="block text-gray-500 p-2">{t('navigation.login')}</Link>
+                </li>}
             </ul>
           </div>
         </nav>
