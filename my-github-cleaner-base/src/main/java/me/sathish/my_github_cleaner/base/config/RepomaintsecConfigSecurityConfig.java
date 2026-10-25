@@ -33,7 +33,11 @@ public class RepomaintsecConfigSecurityConfig {
         return http.securityMatcher("/api/**")
                 .cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().hasAuthority("VIEWER"))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/login")
+                        .permitAll()
+                        .anyRequest()
+                        .hasAnyAuthority("VIEWER", "ADMIN"))
                 .httpBasic(basic -> basic.realmName("basic realm"))
                 .build();
     }

@@ -11,7 +11,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_UPDATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -129,6 +135,44 @@ public class RepositoriesServiceTest {
         verify(gitHubService).updateRepository("azuredeploy", "Cleanup for desc v2");
         verify(eventTrackerService)
                 .sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
+    }
+
+    @Test
+    void findAll_noFilter_usesFindAllWithPageable() {
+        Pageable pageable = PageRequest.of(0, 50, Sort.by("repoName").ascending());
+        Page<Repositories> repoPage = new PageImpl<>(List.of(createRepository(1L, "myrepo", "desc")));
+        when(repositoriesRepository.findAll(pageable)).thenReturn(repoPage);
+
+        Page<RepositoriesDTO> result = repositoriesService.findAll(null, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        verify(repositoriesRepository).findAll(pageable);
+    }
+
+    @Test
+    void findAll_textFilter_usesNameOrIdQuery() {
+        Pageable pageable = PageRequest.of(0, 50, Sort.by("repoName").ascending());
+        Page<Repositories> repoPage = new PageImpl<>(List.of(createRepository(1L, "verbose-parakeet", "desc")));
+        when(repositoriesRepository.findAllByIdOrRepoNameContainingIgnoreCase(null, "verbose", pageable))
+                .thenReturn(repoPage);
+
+        Page<RepositoriesDTO> result = repositoriesService.findAll("verbose", pageable);
+
+        assertEquals(1, result.getTotalElements());
+        verify(repositoriesRepository).findAllByIdOrRepoNameContainingIgnoreCase(null, "verbose", pageable);
+    }
+
+    @Test
+    void findAll_numericFilter_matchesId() {
+        Pageable pageable = PageRequest.of(0, 50);
+        Page<Repositories> repoPage = new PageImpl<>(List.of(createRepository(10000L, "myrepo", "desc")));
+        when(repositoriesRepository.findAllByIdOrRepoNameContainingIgnoreCase(10000L, "10000", pageable))
+                .thenReturn(repoPage);
+
+        Page<RepositoriesDTO> result = repositoriesService.findAll("10000", pageable);
+
+        assertEquals(1, result.getTotalElements());
+        verify(repositoriesRepository).findAllByIdOrRepoNameContainingIgnoreCase(10000L, "10000", pageable);
     }
 
     private Repositories createRepository(Long id, String repoName, String description) {

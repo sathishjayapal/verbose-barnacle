@@ -73,7 +73,7 @@ public class RepositoriesService implements GitHubServiceConstants {
             } catch (final NumberFormatException numberFormatException) {
                 // keep null - no parseable input
             }
-            page = repositoriesRepository.findAllById(longFilter, pageable);
+            page = repositoriesRepository.findAllByIdOrRepoNameContainingIgnoreCase(longFilter, filter, pageable);
         } else {
             page = repositoriesRepository.findAll(pageable);
         }

@@ -5,7 +5,15 @@
   "navigation": {
     "toggle": "Toggle navigation",
     "home": "Home",
-    "entities": "Entities"
+    "entities": "Entities",
+    "logout": "Logout"
+  },
+  "login": {
+    "headline": "Login",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Login",
+    "failed": "Invalid username or password"
   },
   "landing": {
     "headline": "Sathish GITHUB Repositories Cleaner",

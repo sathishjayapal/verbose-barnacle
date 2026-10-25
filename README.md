@@ -46,7 +46,7 @@ config (that's how this drifted before) — don't recreate
 
 Key variables: `GITHUB_TOKEN`, `GITHUB_CLEANER_DB_URL`, `RABBITMQ_HOST`,
 `EVENTSTRACKER_URL`/`eventstracker_username`/`eventstracker_password`,
-`SATHISHLOGGER_URL`, `CONFIG_SERVER_URL`. See `.env.example` for the full list
+`CONFIG_SERVER_URL`. See `.env.example` for the full list
 and important notes on each.
 
 **`CONFIG_SERVER_URL`, `SPRING_CLOUD_CONFIG_USERNAME`, and
@@ -85,6 +85,12 @@ npm run devserver
 ```
 
 The frontend is served at `localhost:3000` and proxies API calls to the backend at `localhost:7080`.
+
+## Logging
+
+Application logs are emitted as newline-delimited JSON to stdout using Spring Boot's
+Logstash console format. Log collection is handled externally; no logging-service
+URL or API key is required. Use `LOG_LEVEL` and `APP_LOG_LEVEL` to control verbosity.
 
 ## Testing
 

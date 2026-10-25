@@ -8,7 +8,6 @@ import axios from 'axios';
 import SearchFilter from 'app/common/list-helper/search-filter';
 import Sorting from 'app/common/list-helper/sorting';
 import useDocumentTitle from 'app/common/use-document-title';
-import {getAuthConfig, getBasicAuthHeader} from 'app/config/auth-config';
 
 
 export default function RepositoriesList() {
@@ -28,9 +27,7 @@ export default function RepositoriesList() {
 
   const getAllRepositorieses = async () => {
     try {
-      const response = await axios.get('/api/repositories?' + listParams,
-          { headers:
-            { authorization: getBasicAuthHeader() } });
+      const response = await axios.get('/api/repositories?' + listParams);
       setRepositorieses(response.data);
     } catch (error: any) {
       handleServerError(error, navigate);
@@ -42,11 +39,6 @@ export default function RepositoriesList() {
       return;
     }
     try {
-      const authConfig = getAuthConfig();
-      axios.defaults.auth = {
-        username: authConfig.username,
-        password: authConfig.password
-      };
       await axios.delete('/api/repositories/' + id);
       navigate('/repositories', {
             state: {

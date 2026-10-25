@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/api/repositories", produces = MediaType.APPLICATION_JSON_VALUE)
-@PreAuthorize("hasAuthority('VIEWER')")
+@PreAuthorize("hasAnyAuthority('VIEWER', 'ADMIN')")
 public class RepositoriesResource {
 
     private final RepositoriesService repositoriesService;

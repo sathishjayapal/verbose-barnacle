@@ -1,11 +1,22 @@
 import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 
 
 export default function Header() {
   const { t } = useTranslation();
   const headerRef = useRef<HTMLElement|null>(null);
+  const navigate = useNavigate();
+
+  const logout = async () => {
+    try {
+      await axios.post('/api/auth/logout');
+    } catch {
+      // session may already be gone - still navigate to login
+    }
+    navigate('/login');
+  };
 
   const handleClick = (event: Event) => {
     // close any open dropdown
@@ -59,6 +70,9 @@ export default function Header() {
                 <ul className="hidden block absolute right-0 bg-white border border-gray-300 rounded min-w-[10rem] py-2" aria-labelledby="navbarEntitiesLink">
                   <li><Link to="/repositories" className="inline-block w-full hover:bg-gray-200 px-4 py-1">{t('repositories.list.headline')}</Link></li>
                 </ul>
+              </li>
+              <li>
+                <button type="button" onClick={logout} className="block text-gray-500 p-2 cursor-pointer">{t('navigation.logout')}</button>
               </li>
             </ul>
           </div>

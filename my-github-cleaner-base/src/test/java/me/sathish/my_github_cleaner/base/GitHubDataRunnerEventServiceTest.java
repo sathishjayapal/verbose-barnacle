@@ -44,16 +44,12 @@ public class GitHubDataRunnerEventServiceTest implements GitHubServiceConstants 
     @BeforeEach
     void setUp() {
         lenient().when(environment.getProperty(eq(GITHUB_USERNAME_KEY))).thenReturn("testuser");
-        lenient()
-                .when(environment.getProperty(eq("sathishlogger.enabled"), eq("true")))
-                .thenReturn("false");
-        lenient()
-                .when(environment.getProperty(eq("sathishlogger.url"), anyString()))
-                .thenReturn("http://localhost:8080");
-        lenient()
-                .when(environment.getProperty(eq("sathishlogger.application-name"), anyString()))
-                .thenReturn("test-app");
         gitHubDataRunner = new GitHubDataRunner(gitHubService, repositoriesService, eventTrackerService, environment);
+    }
+
+    @Test
+    void constructor_doesNotReadLoggingServiceSettings() {
+        verifyNoInteractions(environment);
     }
 
     @Test
