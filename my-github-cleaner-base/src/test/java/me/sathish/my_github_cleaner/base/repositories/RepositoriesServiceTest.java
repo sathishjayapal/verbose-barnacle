@@ -1,5 +1,15 @@
 package me.sathish.my_github_cleaner.base.repositories;
 
+import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_UPDATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.github.GitHubDeleter;
 import me.sathish.my_github_cleaner.base.github.GitHubService;
@@ -9,22 +19,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-
-import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_UPDATED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class RepositoriesServiceTest {
@@ -58,8 +57,7 @@ public class RepositoriesServiceTest {
 
         assertEquals("new description", existing.getDescription());
         verify(gitHubService).updateRepository("myrepo", "new description");
-        verify(eventTrackerService)
-                .sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
+        verify(eventTrackerService).sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
     }
 
     @Test
@@ -76,8 +74,7 @@ public class RepositoriesServiceTest {
 
         assertEquals("new description", existing.getDescription());
         verify(gitHubService).updateRepository("myrepo", "new description");
-        verify(eventTrackerService)
-                .sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
+        verify(eventTrackerService).sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
     }
 
     @Test
@@ -95,8 +92,7 @@ public class RepositoriesServiceTest {
 
         assertEquals("new description", existing.getDescription());
         verify(gitHubService).updateRepository("myrepo", "new description");
-        verify(eventTrackerService)
-                .sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
+        verify(eventTrackerService).sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
     }
 
     @Test
@@ -133,8 +129,7 @@ public class RepositoriesServiceTest {
         assertEquals(cloneUrl, saved.getCloneUrl());
         assertEquals("Cleanup for desc v2", saved.getDescription());
         verify(gitHubService).updateRepository("azuredeploy", "Cleanup for desc v2");
-        verify(eventTrackerService)
-                .sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
+        verify(eventTrackerService).sendGitHubEventToEventstracker(any(String.class), eq(GITHUB_REPOSITORY_UPDATED));
     }
 
     @Test

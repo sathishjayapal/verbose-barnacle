@@ -1,6 +1,10 @@
 package me.sathish.my_github_cleaner.base.github;
 
+import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_DELETED;
+import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_DELETED_FROM_DB;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import me.sathish.my_github_cleaner.base.config.RabbitSchemaConfig;
@@ -9,11 +13,6 @@ import me.sathish.my_github_cleaner.base.repositories.RepositoriesRepository;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-
-import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_DELETED;
-import static me.sathish.my_github_cleaner.base.github.GitHubServiceConstants.GITHUB_REPOSITORY_DELETED_FROM_DB;
 
 @Service
 @Slf4j

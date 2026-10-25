@@ -1,6 +1,13 @@
 package me.sathish.my_github_cleaner.base.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerException;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.repositories.GitHubRepository;
@@ -14,14 +21,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class GitHubService implements GitHubServiceConstants {
@@ -43,7 +42,11 @@ public class GitHubService implements GitHubServiceConstants {
         this(environment, new RestTemplate(), HttpClient.newHttpClient(), eventTrackerService);
     }
 
-    GitHubService(Environment environment, RestTemplate restTemplate, HttpClient httpClient, EventTrackerService eventTrackerService) {
+    GitHubService(
+            Environment environment,
+            RestTemplate restTemplate,
+            HttpClient httpClient,
+            EventTrackerService eventTrackerService) {
         this.environment = environment;
         this.githubToken = environment.getProperty(GITHUB_TOKEN_KEY);
         this.restTemplate = restTemplate;
@@ -74,7 +77,8 @@ public class GitHubService implements GitHubServiceConstants {
                         .build();
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 String scopes = response.headers().firstValue("X-OAuth-Scopes").orElse("");
-                tokenScopes = Arrays.stream(scopes.split(",")).map(String::trim).collect(java.util.stream.Collectors.toSet());
+                tokenScopes =
+                        Arrays.stream(scopes.split(",")).map(String::trim).collect(java.util.stream.Collectors.toSet());
                 log.info("GitHub token scopes: {}", tokenScopes);
             } catch (Exception e) {
                 log.warn("Failed to fetch token scopes: {}", e.getMessage());
@@ -170,12 +174,16 @@ public class GitHubService implements GitHubServiceConstants {
 
         try {
             log.debug("Updating repository description: {}", url);
-            HttpResponse<String> response = httpClient.send(
-                    buildPatchRequest(url, jsonBody), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response =
+                    httpClient.send(buildPatchRequest(url, jsonBody), HttpResponse.BodyHandlers.ofString());
             if (is2xxSuccessful(response)) {
                 return true;
             }
-            log.error("Failed to update user repository {}: HTTP {} - Response: {}", repoName, response.statusCode(), response.body());
+            log.error(
+                    "Failed to update user repository {}: HTTP {} - Response: {}",
+                    repoName,
+                    response.statusCode(),
+                    response.body());
             return tryOrgUpdate(repoName, orgUrl, jsonBody);
         } catch (Exception e) {
             log.error("Failed to update user repository {}: {}", repoName, e.getMessage(), e);
@@ -193,11 +201,19 @@ public class GitHubService implements GitHubServiceConstants {
             HttpResponse<String> orgResponse =
                     httpClient.send(buildPatchRequest(orgUrl, jsonBody), HttpResponse.BodyHandlers.ofString());
             if (!is2xxSuccessful(orgResponse)) {
-                log.error("Failed to update organization repository {}: HTTP {} - Response: {}", repoName, orgResponse.statusCode(), orgResponse.body());
+                log.error(
+                        "Failed to update organization repository {}: HTTP {} - Response: {}",
+                        repoName,
+                        orgResponse.statusCode(),
+                        orgResponse.body());
             }
             return is2xxSuccessful(orgResponse);
         } catch (Exception orgException) {
-            log.error("Failed to update organization repository {}: {}", repoName, orgException.getMessage(), orgException);
+            log.error(
+                    "Failed to update organization repository {}: {}",
+                    repoName,
+                    orgException.getMessage(),
+                    orgException);
             return false;
         }
     }
@@ -295,14 +311,16 @@ public class GitHubService implements GitHubServiceConstants {
             return;
         }
 
-        String errorMsg = String.format("GitHub token lacks required '%s' scope for operation: %s. Current scopes: %s",
+        String errorMsg = String.format(
+                "GitHub token lacks required '%s' scope for operation: %s. Current scopes: %s",
                 requiredScope, operation, tokenScopes);
         log.error(errorMsg);
 
         // Send event about token scope issue
         if (eventTrackerService != null) {
             try {
-                String payload = String.format("{\"issue\":\"token_scope_missing\",\"required_scope\":\"%s\",\"operation\":\"%s\",\"current_scopes\":\"%s\"}",
+                String payload = String.format(
+                        "{\"issue\":\"token_scope_missing\",\"required_scope\":\"%s\",\"operation\":\"%s\",\"current_scopes\":\"%s\"}",
                         requiredScope, operation, String.join(",", tokenScopes));
                 eventTrackerService.sendGitHubEventToEventstracker(payload, GITHUB_TOKEN_ISSUE);
             } catch (EventTrackerException e) {
@@ -310,6 +328,6 @@ public class GitHubService implements GitHubServiceConstants {
             }
         }
 
-//        throw new RuntimeException(errorMsg);
+        //        throw new RuntimeException(errorMsg);
     }
 }

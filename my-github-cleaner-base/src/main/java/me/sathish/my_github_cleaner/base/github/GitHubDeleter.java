@@ -1,12 +1,5 @@
 package me.sathish.my_github_cleaner.base.github;
 
-import lombok.extern.slf4j.Slf4j;
-import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
-
-import javax.net.ssl.SSLSession;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
@@ -14,6 +7,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import javax.net.ssl.SSLSession;
+import lombok.extern.slf4j.Slf4j;
+import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
