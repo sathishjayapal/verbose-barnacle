@@ -1,0 +1,17 @@
+.git
+.github
+.idea
+.vscode
+node_modules
+target
+**/target
+applogs
+k8s
+.env
+.env.bak
+.env.local
+.dockerignore
+Dockerfile
+docker-compose.yml
+README.md
+*.log
