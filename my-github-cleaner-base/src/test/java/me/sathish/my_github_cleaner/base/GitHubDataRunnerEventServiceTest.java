@@ -1,5 +1,14 @@
 package me.sathish.my_github_cleaner.base;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import me.sathish.my_github_cleaner.base.eventracker.EventTrackerService;
 import me.sathish.my_github_cleaner.base.github.GitHubService;
 import me.sathish.my_github_cleaner.base.github.GitHubServiceConstants;
@@ -13,16 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.publisher.Mono;
-
-import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class GitHubDataRunnerEventServiceTest implements GitHubServiceConstants {
