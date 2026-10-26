@@ -67,7 +67,7 @@ jobs:
           IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
         run: echo "tag=$(printf '%s\n' "$IMAGE_TAGS" | head -n 1)" >> "$GITHUB_OUTPUT"
 
-      # Build only (no push yet) — the image must pass Trivy first
+      # Build only (no push) — validates the image builds and warms the cache
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -77,34 +77,49 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Save image tag for scan job
-        run: docker save ${{ steps.image.outputs.tag }} -o /tmp/image.tar
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp/image.tar
-
   scan:
-    needs: build
+    needs: test
     runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.image.outputs.tag }}
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Load image
-        run: docker load -i /tmp/image.tar
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Select image tag
+        id: image
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: echo "tag=$(printf '%s\n' "$IMAGE_TAGS" | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      # Build locally for scanning — shares the gha cache with the build job
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Trivy vulnerability scan (CRITICAL severity only)
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${GITHUB_WORKSPACE}/.trivyignore:/.trivyignore:ro \
             aquasec/trivy image \
             --severity CRITICAL \
             --exit-code 1 \
             --ignore-unfixed \
-            ${{ needs.build.outputs.image-tag }}
+            --ignorefile /.trivyignore \
+            ${{ steps.image.outputs.tag }}
 
       - name: Trivy vulnerability report (all severities for transparency)
         if: always()
@@ -113,7 +128,7 @@ jobs:
             aquasec/trivy image \
             --format table \
             --ignore-unfixed \
-            ${{ needs.build.outputs.image-tag }} || true
+            ${{ steps.image.outputs.tag }} || true
 
   publish:
     needs: [ build, scan ]
