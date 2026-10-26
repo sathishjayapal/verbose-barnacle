@@ -21,7 +21,7 @@ i18n
     }
   });
 
-axios.defaults.baseURL = process.env.API_PATH;
+axios.defaults.baseURL = process.env.API_PATH || '';
 axios.defaults.withCredentials = true;
 axios.interceptors.response.use(
   (response) => response,
