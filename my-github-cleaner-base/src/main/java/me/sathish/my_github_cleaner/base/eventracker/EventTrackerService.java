@@ -55,6 +55,11 @@ public class EventTrackerService {
 
     @PostConstruct
     public void fetchDomainsOnStartup() {
+        if (!Boolean.parseBoolean(environment.getProperty("eventstracker.startup-fetch.enabled", "true"))) {
+            log.info("EventTracker startup fetch disabled (eventstracker.startup-fetch.enabled=false)");
+            domainsData = List.of();
+            return;
+        }
         String eventsTrackerUrl = environment.getProperty("EVENTSTRACKER_URL");
         String eventServiceUserName = environment.getProperty("eventstracker_username");
         String eventServicePassword = environment.getProperty("eventstracker_password");

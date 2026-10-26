@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlMergeMode;
 import org.springframework.util.StreamUtils;
@@ -23,6 +24,33 @@ import org.testcontainers.containers.PostgreSQLContainer;
  */
 @SpringBootTest(classes = MyGithubCleanerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("it")
+// Test property sources are bound before spring.config.import resolution, so
+// disabling the config client here reliably prevents the `configserver:` import
+// in application.yml from contacting a (nonexistent on CI) config server. The
+// datasource comes from the Testcontainers PostgreSQL @ServiceConnection below.
+@TestPropertySource(
+        properties = {
+            "spring.cloud.config.enabled=false",
+            "spring.rabbitmq.listener.simple.auto-startup=false",
+            "spring.rabbitmq.listener.direct.auto-startup=false",
+            "eventstracker.startup-fetch.enabled=false",
+            "github.data-runner.enabled=false",
+            "error.handling.http-status-in-json-response=true",
+            "error.handling.exception-logging=NO_LOGGING",
+            "error.handling.full-stacktrace-http-statuses=5xx",
+            "error.handling.log-levels.5xx=ERROR",
+            "error.handling.http-statuses.org.springframework.security.authorization.AuthorizationDeniedException=unauthorized",
+            "EVENTSTRACKER_URL=http://localhost:9081",
+            "eventstracker_username=test",
+            "eventstracker_password=test",
+            "GITHUB_TOKEN=test-token",
+            "githubusername=test-user",
+            "githuborgkey=test-org",
+            "app.security.admin.username=" + BaseIT.ADMIN,
+            "app.security.admin.password={noop}" + BaseIT.PASSWORD,
+            "app.security.viewer.username=" + BaseIT.VIEWER,
+            "app.security.viewer.password={noop}" + BaseIT.PASSWORD
+        })
 @Sql("/data/clearAll.sql")
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 public abstract class BaseIT {

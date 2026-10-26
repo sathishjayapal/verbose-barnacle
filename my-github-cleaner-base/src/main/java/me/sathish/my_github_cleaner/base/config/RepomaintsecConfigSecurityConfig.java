@@ -2,8 +2,10 @@ package me.sathish.my_github_cleaner.base.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -39,6 +41,15 @@ public class RepomaintsecConfigSecurityConfig {
                         .anyRequest()
                         .hasAnyAuthority("VIEWER", "ADMIN"))
                 .httpBasic(basic -> basic.realmName("basic realm"))
+                .exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, ex) -> {
+                    // Basic-auth rejects unauthenticated requests in the filter
+                    // chain, before the error-handling starter can format them —
+                    // emit the same JSON shape ({code: AUTHORIZATION_DENIED})
+                    // it would produce for AuthorizationDeniedException.
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.getWriter().write("{\"code\":\"AUTHORIZATION_DENIED\",\"message\":\"Unauthorized\"}");
+                }))
                 .build();
     }
     //    @Bean

@@ -28,13 +28,13 @@ public class RepomaintsecConfigUserDetailsService implements UserDetailsService 
         String viewerUsername = environment.getProperty("app.security.viewer.username");
         String viewerPassword = environment.getProperty("app.security.viewer.password");
 
-        if (adminUsername.equals(username)) {
+        if (adminUsername != null && adminUsername.equals(username) && adminPassword != null) {
             final List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(UserRoles.ADMIN));
             return User.withUsername(username)
                     .password(adminPassword)
                     .authorities(authorities)
                     .build();
-        } else if (viewerUsername.equals(username)) {
+        } else if (viewerUsername != null && viewerUsername.equals(username) && viewerPassword != null) {
             final List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(UserRoles.VIEWER));
             return User.withUsername(username)
                     .password(viewerPassword)

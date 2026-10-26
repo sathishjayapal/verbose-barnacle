@@ -6,7 +6,8 @@
     "toggle": "Toggle navigation",
     "home": "Home",
     "entities": "Entities",
-    "logout": "Logout"
+    "logout": "Logout",
+    "login": "Login"
   },
   "login": {
     "headline": "Login",
