@@ -300,6 +300,18 @@ public class GitHubService implements GitHubServiceConstants {
     }
 
     /**
+     * True if the token's scopes satisfy {@code requiredScope}. GitHub's {@code repo} scope is a superset of
+     * {@code public_repo}, so a token with {@code repo} must not be reported as missing {@code public_repo}
+     * (an exact-match check did exactly that and sent a false GITHUB_TOKEN_ISSUE event every day).
+     */
+    private boolean hasScope(String requiredScope) {
+        if (tokenScopes.contains(requiredScope)) {
+            return true;
+        }
+        return "public_repo".equals(requiredScope) && tokenScopes.contains("repo");
+    }
+
+    /**
      * Ensures the GitHub token has the required scope for the specified operation.
      * If the scope is missing, logs the error, sends an event to EventTracker, and throws an exception.
      *
@@ -307,7 +319,7 @@ public class GitHubService implements GitHubServiceConstants {
      * @param operation     the operation being attempted (for error messaging)
      */
     private void ensureScope(String requiredScope, String operation) {
-        if (tokenScopes.contains(requiredScope)) {
+        if (hasScope(requiredScope)) {
             return;
         }
 
